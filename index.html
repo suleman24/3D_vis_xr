@@ -1,0 +1,4701 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Motion Visualization</title>
+    <style>
+        :root {
+            --bg: #eef2f6;
+            --panel: #ffffff;
+            --panel-soft: #f8fafc;
+            --text: #172033;
+            --muted: #64748b;
+            --line: #d7e0ea;
+            --accent: #132d63;
+            --accent-strong: #132965;
+            --accent-soft: #eff6ff;
+            --shadow: 0 10px 30px rgba(15, 23, 42, 0.07);
+        }
+        * { box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+        html, body {
+  background:#fff;
+  color:#222;
+            margin: 0;
+            width: 100%;
+            min-height: 100%;
+            font-family: Arial, sans-serif;
+            background: radial-gradient(circle at top left, #172554 0, #070b18 34%, #050816 100%);
+            color: var(--text);
+        }
+        body {
+  background:#fff;
+  color:#222; overflow-x: hidden; }
+        a { color: inherit; text-decoration: none; }
+        .page {
+            width: min(1180px, calc(100% - 40px));
+            margin: 0 auto;
+        }
+        .nav {
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            backdrop-filter: blur(16px);
+            background: rgba(7, 11, 24, 0.78);
+            border-bottom: 1px solid rgba(148, 163, 184, 0.18);
+        }
+        .nav-inner {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            min-height: 66px;
+        }
+        .brand {
+            font-weight: 800;
+            letter-spacing: 0.02em;
+        }
+        .brand span {
+            display: block;
+            color: var(--muted);
+            font-size: 12px;
+            font-weight: 500;
+            margin-top: 2px;
+        }
+        .nav-links {
+            display: flex;
+            gap: 18px;
+            color: #526174;
+            font-size: 14px;
+        }
+        .hero {
+            padding: 76px 0 54px;
+        }
+        .hero-grid {
+            display: grid;
+            grid-template-columns: 1.05fr 0.95fr;
+            gap: 34px;
+            align-items: center;
+        }
+        .kicker {
+            color: #93c5fd;
+            text-transform: uppercase;
+            letter-spacing: 0.14em;
+            font-size: 12px;
+            font-weight: 800;
+            margin-bottom: 16px;
+        }
+        h1 {
+            margin: 0;
+            font-size: clamp(36px, 5vw, 66px);
+            line-height: 1.02;
+            letter-spacing: -0.045em;
+        }
+        .lead {
+            margin: 22px 0 0;
+            max-width: 710px;
+            color: #526174;
+            font-size: 18px;
+            line-height: 1.7;
+        }
+        .actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-top: 28px;
+        }
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 999px;
+            padding: 12px 18px;
+            font-weight: 800;
+            border: 1px solid rgba(148, 163, 184, 0.28);
+            background: rgba(15, 23, 42, 0.7);
+            color: #172033;
+        }
+        .btn.primary {
+            border-color: transparent;
+            background: linear-gradient(135deg, #2563eb, #60a5fa);
+            color: #222;
+        }
+        .hero-card, .section-card {
+            background: linear-gradient(180deg, rgba(15, 23, 42, 0.92), rgba(15, 23, 42, 0.64));
+            border: 1px solid rgba(148, 163, 184, 0.22);
+            border-radius: 24px;
+            box-shadow: 0 24px 70px rgba(0, 0, 0, 0.32);
+        }
+        .hero-card { padding: 18px; }
+        video {
+            width: 100%;
+            display: block;
+            border-radius: 18px;
+            background: #ffffff;
+            border: 1px solid rgba(148, 163, 184, 0.22);
+        }
+        .caption {
+            color: var(--muted);
+            font-size: 13px;
+            line-height: 1.5;
+            margin: 12px 4px 0;
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            margin-top: 30px;
+        }
+        .stat {
+            padding: 16px;
+            border: 1px solid rgba(148, 163, 184, 0.18);
+            border-radius: 18px;
+            background: rgba(15, 23, 42, 0.52);
+        }
+        .stat b {
+            display: block;
+            font-size: 22px;
+            margin-bottom: 5px;
+        }
+        .stat span {
+            color: var(--muted);
+            font-size: 13px;
+        }
+        section { padding: 34px 0; }
+        .section-title {
+            margin: 0 0 18px;
+            font-size: 30px;
+            letter-spacing: -0.03em;
+        }
+        .method-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 14px;
+        }
+        .method-step {
+            padding: 18px;
+            min-height: 150px;
+        }
+        .method-step small {
+            color: #93c5fd;
+            font-weight: 800;
+        }
+        .method-step h3 {
+            margin: 12px 0 8px;
+            font-size: 18px;
+        }
+        .method-step p {
+            margin: 0;
+            color: #526174;
+            line-height: 1.55;
+            font-size: 14px;
+        }
+        #viewer-section {
+            width: min(1380px, calc(100% - 28px));
+            margin: 0 auto 44px;
+            padding-top: 28px;
+        }
+        .viewer-heading {
+            display: flex;
+            align-items: end;
+            justify-content: space-between;
+            gap: 20px;
+            margin-bottom: 14px;
+        }
+        .viewer-heading p {
+            max-width: 720px;
+            color: var(--muted);
+            line-height: 1.6;
+            margin: 8px 0 0;
+        }
+        #app {
+            display: block;
+            height: 82vh;
+            min-height: 620px;
+            width: 100%;
+            border-radius: 24px;
+            overflow: hidden;
+            border: 1px solid rgba(148, 163, 184, 0.24);
+            box-shadow: 0 30px 90px rgba(0, 0, 0, 0.42);
+            background: #dfe6ee;
+        }
+        #viewer {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            background: #dfe6ee;
+        }
+        #sidePanel { display: none; }
+        #bottomPanel { display: none; }
+        h2, h3 { margin: 8px 0; }
+        button, select {
+            background: #2563eb;
+            color: #222;
+            border: 0;
+            border-radius: 7px;
+            padding: 7px 9px;
+            margin: 3px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        select {
+            background: #f8fafc;
+            border: 1px solid #94a3b8;
+        }
+        button.secondary { background: #d7e0ea; }
+        input[type=range] { width: 100%; }
+        .row { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+        .card {
+            background: rgba(15, 23, 42, 0.92);
+            border: 1px solid #d7e0ea;
+            border-radius: 10px;
+            padding: 10px;
+            margin: 8px 0;
+        }
+        .small { font-size: 12px; color: #526174; line-height: 1.35; }
+        .phaseCell {
+            display: inline-block;
+            padding: 7px 10px;
+            margin: 2px;
+            border: 1px solid #94a3b8;
+            border-radius: 8px;
+            background: #f1f5f9;
+            font-size: 12px;
+            cursor: pointer;
+        }
+        .phaseActive { background: #2563eb; border-color: #93c5fd; font-weight: bold; }
+        .barLabel { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 3px; }
+        .barOuter {
+            height: 13px;
+            background: #f1f5f9;
+            border-radius: 20px;
+            overflow: hidden;
+            border: 1px solid #d7e0ea;
+            margin-bottom: 9px;
+        }
+        .barInner { height: 100%; background: linear-gradient(90deg, #ffe10d, #e60000); width: 0%; }
+        #curveCanvas {
+            width: 100%;
+            height: 92px;
+            background: #ffffff;
+            border: 1px solid #d7e0ea;
+            border-radius: 8px;
+        }
+        #legendGradient {
+            height: 14px;
+            border-radius: 20px;
+            background: linear-gradient(90deg, #ffe10d, #e60000);
+            border: 1px solid #94a3b8;
+            margin-top: 7px;
+        }
+        #loading {
+            position: absolute;
+            left: 50%; top: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(2,6,23,.9);
+            padding: 18px 24px;
+            border-radius: 12px;
+            border: 1px solid #d7e0ea;
+            color: #222;
+            z-index: 10;
+            white-space: pre-wrap;
+        }
+        #hud {
+            position: absolute;
+            left: 14px;
+            top: 14px;
+            background: rgba(2,6,23,.78);
+            border: 1px solid #d7e0ea;
+            border-radius: 10px;
+            padding: 10px;
+            font-size: 12px;
+            line-height: 1.35;
+            pointer-events: none;
+        }
+
+        .pipeline-flow {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 14px;
+            margin-top: 18px;
+        }
+        .pipeline-node {
+            position: relative;
+            background: rgba(15, 23, 42, 0.86);
+            border: 1px solid rgba(148, 163, 184, 0.22);
+            border-radius: 16px;
+            padding: 16px;
+            min-height: 150px;
+        }
+        .pipeline-node::after {
+            content: "→";
+            position: absolute;
+            right: -14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #60a5fa;
+            font-weight: 800;
+            font-size: 22px;
+        }
+        .pipeline-node:nth-child(4)::after,
+        .pipeline-node:last-child::after { content: ""; }
+        .pipeline-node small {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 30px;
+            height: 30px;
+            border-radius: 999px;
+            background: rgba(37, 99, 235, 0.2);
+            color: #bfdbfe;
+            font-weight: 800;
+            margin-bottom: 9px;
+        }
+        .pipeline-node h3 {
+            margin: 0 0 8px;
+            font-size: 17px;
+        }
+        .pipeline-node p {
+            margin: 0;
+            color: #526174;
+            line-height: 1.55;
+            font-size: 14px;
+        }
+        .pipeline-outputs {
+            margin-top: 16px;
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 14px;
+        }
+        .output-pill {
+            border: 1px solid rgba(16, 51, 93, 0.28);
+            background: rgba(30, 41, 59, 0.7);
+            border-radius: 14px;
+            padding: 12px 14px;
+            color: #203550;
+            font-size: 14px;
+            line-height: 1.45;
+        }
+        .output-pill b { color: #0f2961; }
+
+
+        .analysis-dashboard {
+            width: min(1380px, calc(100% - 28px));
+            margin: 0 auto 54px;
+        }
+        .analysis-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+        .analysis-panel {
+            background: rgba(15, 23, 42, 0.88);
+            border: 1px solid rgba(148, 163, 184, 0.22);
+            border-radius: 20px;
+            padding: 16px;
+        }
+        .analysis-panel.wide { grid-column: 1 / -1; }
+        .analysis-panel h3 { margin: 0 0 10px; }
+        .analysis-controls {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        .analysis-controls label { color: #526174; font-size: 14px; }
+        .analysis-canvas {
+            display: block;
+            width: 100%;
+            height: auto;
+            background: #ffffff;
+            border: 1px solid #d7e0ea;
+            border-radius: 12px;
+        }
+        @media (max-width: 900px) {
+            .analysis-grid { grid-template-columns: 1fr; }
+            .analysis-panel.wide { grid-column: auto; }
+        }
+
+        footer {
+            border-top: 1px solid rgba(148, 163, 184, 0.16);
+            color: var(--muted);
+            padding: 24px 0 36px;
+            font-size: 14px;
+        }
+        @media (max-width: 900px) {
+            .hero-grid, .method-grid, .stats, .pipeline-flow, .pipeline-outputs { grid-template-columns: 1fr; }
+            .pipeline-node::after { content: "↓"; right: 50%; top: auto; bottom: -22px; transform: translateX(50%); }
+            .pipeline-node:last-child::after { content: ""; }
+            .nav-links { display: none; }
+            #app { min-height: 560px; height: 78vh; }
+        }
+    
+        .vr-button-mount {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 56px;
+            margin: 4px 0 12px;
+        }
+        .vr-button-mount #vrButton {
+            position: relative !important;
+            left: auto !important;
+            right: auto !important;
+            top: auto !important;
+            bottom: auto !important;
+        }
+
+        /* Permanent webpage theme: restrained research-dashboard palette. */
+        html, body {
+            background: var(--bg);
+            color: var(--text);
+        }
+        body { overflow-x: hidden; }
+        .nav {
+            background: rgba(255, 255, 255, 0.94);
+            border-bottom: 1px solid var(--line);
+            box-shadow: 0 1px 8px rgba(15, 23, 42, 0.04);
+        }
+        .brand { color: #172033; }
+        .brand span, .nav-links, .caption, .viewer-heading p, footer { color: var(--muted); }
+        .nav-links a:hover { color: var(--accent-strong); }
+        .hero { padding-top: 68px; }
+        .kicker { color: var(--accent-strong); }
+        .lead, .method-step p, .pipeline-node p { color: #526174; }
+        .hero-card, .section-card, .analysis-panel, .card, .pipeline-node, .stat {
+            background: var(--panel);
+            border-color: var(--line);
+            box-shadow: var(--shadow);
+        }
+        .hero-card, .section-card { border-radius: 20px; }
+        video {
+            background: #e8edf3;
+            border-color: var(--line);
+        }
+        .stat b, h1, h2, h3, .section-title { color: #172033; }
+        .method-step small, .pipeline-node::after { color: var(--accent); }
+        .pipeline-node small {
+            background: var(--accent-soft);
+            color: var(--accent-strong);
+        }
+        .output-pill {
+            background: #f8fafc;
+            border-color: #bfdbfe;
+            color: #0c2e55;
+        }
+        .output-pill b { color: var(--accent-strong); }
+        .btn, button, select {
+            border: 1px solid #526174;
+            background: #ffffff;
+            color: #27364a;
+            box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+        }
+        .btn:hover, button:hover, select:hover {
+            border-color: #94a3b8;
+            background: #f8fafc;
+        }
+        .btn.primary, button:not(.secondary) {
+            border-color: var(--accent);
+            background: var(--accent);
+            color: #ffffff;
+        }
+        .btn.primary:hover, button:not(.secondary):hover {
+            border-color: var(--accent-strong);
+            background: var(--accent-strong);
+        }
+        button.secondary {
+            background: #ffffff;
+            color: #d7e0ea;
+            border-color: #526174;
+        }
+        button.secondary:hover { background: #f1f5f9; }
+        select { background: #ffffff; color: #27364a; }
+        input[type=range] { accent-color: var(--accent); }
+        #app {
+            border-color: #526174;
+            box-shadow: 0 18px 48px rgba(15, 23, 42, 0.12);
+            background: #dfe6ee;
+        }
+        #viewer { background: #dfe6ee; }
+        .phaseCell {
+            border-color: #526174;
+            background: #f8fafc;
+            color: #d7e0ea;
+        }
+        .phaseCell:hover { background: #eff6ff; border-color: #93c5fd; }
+        .phaseActive {
+            background: var(--accent);
+            color: #ffffff;
+            border-color: var(--accent);
+        }
+        .barOuter { background: #e2e8f0; border-color: #526174; }
+        #curveCanvas, .analysis-canvas {
+            background: #ffffff;
+            border-color: var(--line);
+        }
+        #loading {
+            background: rgba(255, 255, 255, 0.95);
+            border-color: var(--line);
+            color: #172033;
+            box-shadow: var(--shadow);
+        }
+        #hud {
+            background: rgba(255, 255, 255, 0.88);
+            border-color: #526174;
+            color: #27364a;
+            box-shadow: 0 4px 14px rgba(15, 23, 42, 0.08);
+        }
+        .analysis-panel { border-radius: 16px; }
+        .analysis-controls label, .small { color: #526174; }
+        footer { border-top-color: var(--line); }
+
+
+        /* Final viewer action bar and live-analysis dashboard */
+        .viewer-actionbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 18px;
+            margin: 0 0 14px;
+            padding: 14px 16px;
+            background: #ffffff;
+            border: 1px solid #d8e1ec;
+            border-radius: 14px;
+            box-shadow: 0 5px 18px rgba(30, 41, 59, 0.06);
+        }
+        .scene-theme-control { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+        .scene-theme-label { color: #475569; font-size: 14px; font-weight: 700; }
+        .scene-theme-button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 9px;
+            min-height: 42px;
+            padding: 9px 16px;
+            border: 1px solid #1d4ed8 !important;
+            border-radius: 10px;
+            background: #eff6ff !important;
+            color: #1e3a8a !important;
+            font-weight: 800;
+            cursor: pointer;
+        }
+        .scene-theme-button:hover { background: #dbeafe !important; border-color: #1e40af !important; }
+        .scene-theme-button span:first-child { font-size: 18px; line-height: 1; }
+        .viewer-action-note { color: #64748b; font-size: 13px; text-align: right; }
+
+        /* Always-visible controls for the wall-mounted analysis panels. */
+        .wall-panel-controls {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 14px;
+            flex-wrap: wrap;
+            margin: 0 0 14px;
+            padding: 12px 14px;
+            background: #ffffff;
+            border: 1px solid #d8e1ec;
+            border-radius: 14px;
+            box-shadow: 0 5px 18px rgba(30, 41, 59, 0.06);
+        }
+        .wall-panel-controls-label {
+            color: #475569;
+            font-size: 14px;
+            font-weight: 800;
+        }
+        .wall-panel-controls-buttons {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .wall-panel-toggle {
+            min-height: 38px;
+            padding: 8px 13px;
+            border-radius: 9px;
+            border: 1px solid #94a3b8 !important;
+            background: #ffffff !important;
+            color: #334155 !important;
+            font-weight: 800;
+        }
+        .wall-panel-toggle:hover {
+            background: #f8fafc !important;
+            border-color: #64748b !important;
+        }
+        .wall-panel-toggle[aria-pressed="true"] {
+            background: #eff6ff !important;
+            border-color: #2563eb !important;
+            color: #1d4ed8 !important;
+        }
+
+        .vr-button-mount { margin: 16px 0 28px; min-height: 64px; }
+        .vr-button-mount #vrButton {
+            width: auto !important;
+            min-width: 230px !important;
+            max-width: 100% !important;
+            min-height: 50px !important;
+            height: auto !important;
+            padding: 14px 28px !important;
+            box-sizing: border-box !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            white-space: nowrap !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+            border: 1px solid #064e3b !important;
+            border-radius: 12px !important;
+            background: #047857 !important;
+            color: #ffffff !important;
+            font-family: Arial, sans-serif !important;
+            font-size: 14px !important;
+            font-weight: 800 !important;
+            line-height: 1.2 !important;
+            letter-spacing: .035em !important;
+            text-align: center !important;
+            opacity: 1 !important;
+            box-shadow: 0 8px 22px rgba(4, 120, 87, .26) !important;
+        }
+        .vr-button-mount #vrButton:hover { background: #065f46 !important; transform: translateY(-1px); }
+
+        .analysis-dashboard {
+            width: min(1380px, calc(100% - 28px));
+            margin: 0 auto 60px;
+            padding: 28px;
+            background: #f8fafc;
+            border: 1px solid #d8e1ec;
+            border-radius: 22px;
+            box-shadow: 0 12px 36px rgba(30, 41, 59, 0.07);
+        }
+        .analysis-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 24px; margin-bottom: 20px; }
+        .analysis-eyebrow, .chart-kicker {
+            display: block;
+            color: #2563eb;
+            font-size: 12px;
+            font-weight: 800;
+            letter-spacing: .09em;
+            text-transform: uppercase;
+            margin-bottom: 5px;
+        }
+        .analysis-header h2 { margin: 0 0 7px; color: #172033; font-size: clamp(25px, 3vw, 34px); }
+        .analysis-header p { margin: 0; color: #64748b; max-width: 720px; line-height: 1.55; }
+        .analysis-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 9px 12px;
+            background: #ffffff;
+            border: 1px solid #d8e1ec;
+            border-radius: 999px;
+            color: #475569;
+            font-size: 13px;
+            white-space: nowrap;
+        }
+        .status-dot { width: 8px; height: 8px; border-radius: 50%; background: #16a34a; box-shadow: 0 0 0 4px #dcfce7; }
+        .analysis-toolbar {
+            display: flex;
+            align-items: end;
+            gap: 14px;
+            flex-wrap: wrap;
+            margin-bottom: 18px;
+            padding: 14px;
+            background: #ffffff;
+            border: 1px solid #d8e1ec;
+            border-radius: 14px;
+        }
+        .analysis-toolbar label { display: grid; gap: 6px; color: #475569; font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: .05em; }
+        .analysis-toolbar select { min-width: 190px; height: 40px; border-radius: 9px; border-color: #cbd5e1; color: #1e293b; font-weight: 600; }
+        .analysis-legend { margin-left: auto; display: flex; align-items: center; gap: 16px; color: #64748b; font-size: 13px; flex-wrap: wrap; }
+        .analysis-legend span { display: inline-flex; align-items: center; gap: 7px; }
+        .legend-line { width: 20px; height: 3px; border-radius: 99px; background: #64748b; }
+        .legend-line.reference { background: #2563eb; }
+        .legend-line.learner { background: #ea580c; }
+        .legend-line.current { background: #16a34a; }
+        .analysis-layout { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+        .analysis-chart {
+            min-width: 0;
+            padding: 18px;
+            background: #ffffff;
+            border: 1px solid #d8e1ec;
+            border-radius: 16px;
+        }
+        .analysis-chart-primary, .analysis-chart-summary { grid-column: 1 / -1; }
+        .chart-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 12px; }
+        .chart-heading h3 { margin: 0; color: #1e293b; font-size: 18px; }
+        .chart-note { color: #64748b; font-size: 12px; background: #f1f5f9; border-radius: 999px; padding: 6px 9px; white-space: nowrap; }
+        .canvas-shell { overflow: hidden; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; }
+        .canvas-shell-wide { aspect-ratio: 10 / 3; }
+        .canvas-shell-square { aspect-ratio: 1.45 / 1; }
+        .canvas-shell-summary { aspect-ratio: 6.4 / 1; }
+        .analysis-canvas { width: 100%; height: 100%; object-fit: fill; border: 0; border-radius: 0; }
+
+        /* Compact live-analysis layout: all panels remain visible together on desktop. */
+        .viewer-toolbar-controls { display:flex; align-items:center; gap:18px; flex-wrap:wrap; }
+        .scene-metric-control { display:grid; gap:5px; color:#475569; font-size:13px; font-weight:700; }
+        .scene-metric-control select { min-width:170px; height:42px; border-radius:10px; border:1px solid #94a3b8; background:#fff; color:#172033; font-weight:700; padding:0 34px 0 11px; }
+        .analysis-dashboard { width:min(1500px, calc(100% - 24px)); padding:18px; margin-bottom:38px; }
+        .analysis-header { margin-bottom:12px; align-items:center; }
+        .analysis-header h2 { font-size:clamp(23px,2.4vw,30px); }
+        .analysis-header p { font-size:14px; line-height:1.4; }
+        .analysis-toolbar { padding:10px 12px; margin-bottom:12px; gap:10px; }
+        .analysis-toolbar select { min-width:160px; height:36px; }
+        .analysis-layout { grid-template-columns:2fr 1fr 1fr; gap:12px; align-items:stretch; }
+        .analysis-chart { padding:12px; border-radius:14px; }
+        .analysis-chart-primary { grid-column:auto; }
+        .analysis-chart-summary { grid-column:1 / -1; }
+        .chart-heading { margin-bottom:8px; }
+        .chart-heading h3 { font-size:15px; }
+        .chart-kicker { font-size:10px; margin-bottom:3px; }
+        .chart-note { padding:4px 7px; font-size:10px; }
+        .canvas-shell-wide, .canvas-shell-square { aspect-ratio:auto; height:230px; }
+        .canvas-shell-summary { aspect-ratio:auto; height:105px; }
+        .analysis-canvas { display:block; width:100%; height:100%; }
+        @media (max-width:1100px) {
+            .analysis-layout { grid-template-columns:1fr 1fr; }
+            .analysis-chart-primary { grid-column:1 / -1; }
+            .analysis-chart-summary { grid-column:1 / -1; }
+        }
+
+        @media (max-width: 900px) {
+            .viewer-actionbar, .analysis-header { flex-direction: column; align-items: stretch; }
+            .viewer-action-note { text-align: left; }
+            .analysis-dashboard { padding: 18px; }
+            .analysis-layout { grid-template-columns: 1fr; }
+            .analysis-chart-primary, .analysis-chart-summary { grid-column: auto; }
+            .analysis-legend { margin-left: 0; width: 100%; }
+            .canvas-shell-wide, .canvas-shell-square { height:220px; }
+            .canvas-shell-summary { aspect-ratio:auto; height:125px; }
+        }
+
+    </style>
+</head>
+<body>
+<nav class="nav">
+    <div class="page nav-inner">
+        <a class="brand" href="#top">
+            3D Body Pose Visualization in Extended Reality for Movement Learning
+        </a>
+        <div class="nav-links">
+            <a href="#overview">Overview</a>
+            <a href="#framework-video">Video</a>
+            <a href="#method">Pipeline</a>
+            <a href="#viewer-section">XR Viewer</a>
+        </div>
+    </div>
+</nav>
+
+<header class="hero page" id="top">
+    <div class="hero-grid">
+        <div>
+            <div class="kicker">Master’s Thesis Demo</div>
+            <h1>Interactive XR feedback for comparing human movement.</h1>
+            <p class="lead">
+                This webpage presents a thesis framework that compares a learner’s movement with a reference performance using reconstructed 3D body motion, phase detection, dynamic time warping, body-part error metrics, and an immersive WebXR visualization.
+            </p>
+            <div class="actions">
+                <a class="btn primary" href="#viewer-section">Open XR Viewer</a>
+                <a class="btn" href="#framework-video">Watch Framework Video</a>
+            </div>
+            <div class="stats">
+                <div class="stat"><b>SMPL-X</b><span>3D body representation</span></div>
+                <div class="stat"><b>CPOP</b><span>phase detection</span></div>
+                <div class="stat"><b>DTW</b><span>temporal alignment</span></div>
+                <div class="stat"><b>WebXR</b><span>immersive feedback</span></div>
+            </div>
+        </div>
+        <div class="hero-card" id="framework-video">
+            <video controls preload="metadata" poster="">
+                <source src="videos/myvideo.mp4" type="video/mp4">
+                Your browser does not support the video tag.
+            </video>
+            <p class="caption">
+                Thesis framework explanation video. The video is loaded from <code>videos/myvideo.mp4</code> inside the deployed Surge folder.
+            </p>
+        </div>
+    </div>
+</header>
+
+<main>
+    <section class="page" id="overview">
+        <h2 class="section-title">Project overview</h2>
+        <div class="section-card" style="padding:22px;">
+            <p style="margin:0; color:#526174; line-height:1.75; font-size:16px;">
+                The system starts from reconstructed 3D human motion and converts it into a structured comparison between a reference and learner performance. Instead of comparing videos frame by frame, the movement is segmented into phases, temporally aligned, and analysed through body-part-level errors. The XR viewer then presents the results spatially, allowing users to inspect where and when movement differences occur.
+            </p>
+        </div>
+    </section>
+
+    <section class="page" id="method">
+        <h2 class="section-title">Complete framework pipeline</h2>
+        <div class="section-card" style="padding:22px;">
+            <p style="margin:0; color:#526174; line-height:1.75; font-size:16px;">
+                The demonstrator follows the complete thesis workflow: the original performances are processed into SMPL-X motion, normalized for comparison, segmented into movement phases, temporally aligned with DTW, converted into interpretable body-part errors, and finally presented through a browser-based WebXR scene.
+            </p>
+            <div class="pipeline-flow">
+                <div class="pipeline-node">
+                    <small>01</small>
+                    <h3>Input performances</h3>
+                    <p>Reference and learner recordings are used as the source material. In this deployment, the exported dataset is loaded as <code>data/experiment_01.json</code>.</p>
+                </div>
+                <div class="pipeline-node">
+                    <small>02</small>
+                    <h3>SMPL-X reconstruction</h3>
+                    <p>The PREMIERE processing pipeline provides reconstructed 3D body motion. Selected joints are extracted from the SMPL-X sequence for analysis.</p>
+                </div>
+                <div class="pipeline-node">
+                    <small>03</small>
+                    <h3>Preprocessing</h3>
+                    <p>Motion is pelvis-centered, scale-normalized, and converted into joint trajectories suitable for phase detection, alignment, and error computation.</p>
+                </div>
+                <div class="pipeline-node">
+                    <small>04</small>
+                    <h3>Motion flux and CPOP</h3>
+                    <p>Global motion flux summarizes changes in body movement. CPOP-style change-point detection divides the reference motion into data-driven phases.</p>
+                </div>
+                <div class="pipeline-node">
+                    <small>05</small>
+                    <h3>Dynamic Time Warping</h3>
+                    <p>DTW aligns corresponding movement states between reference and learner sequences, even when the same action is performed with different timing.</p>
+                </div>
+                <div class="pipeline-node">
+                    <small>06</small>
+                    <h3>Body-part metrics</h3>
+                    <p>Position, velocity, angle, and flux differences are computed for body regions such as head, torso, arms, and legs.</p>
+                </div>
+                <div class="pipeline-node">
+                    <small>07</small>
+                    <h3>Analysis outputs</h3>
+                    <p>The pipeline exports JSON and CSV data containing phases, DTW mappings, frame metadata, metric curves, and phase-wise error summaries.</p>
+                </div>
+                <div class="pipeline-node">
+                    <small>08</small>
+                    <h3>WebXR visualization</h3>
+                    <p>Three.js displays skeletons, heatmaps, ghost overlays, correction arrows, phase controls, and DTW panels in an interactive XR scene.</p>
+                </div>
+            </div>
+            <div class="pipeline-outputs">
+                <div class="output-pill"><b>Core comparison:</b><br>reference motion, learner motion, phase boundaries, and DTW alignment path.</div>
+                <div class="output-pill"><b>Quantitative feedback:</b><br>body-part error values, phase curves, dominant mismatch regions, and timing information.</div>
+                <div class="output-pill"><b>Visual feedback:</b><br>colored skeleton regions, ghost reference overlay, correction arrows, and wall-mounted analysis panels.</div>
+            </div>
+        </div>
+    </section>
+
+    <section id="viewer-section">
+        <div class="viewer-heading">
+            <div>
+                <h2 class="section-title" style="margin-bottom:0;">Interactive XR viewer</h2>
+                <p>
+                    Use the browser view for inspection, or open the page on a VR headset through HTTPS to enter WebXR. The viewer loads <code>data/experiment_01.json</code> by default.
+                </p>
+            </div>
+            <a class="btn" href="#top">Back to top</a>
+        </div>
+
+        <div class="viewer-actionbar" aria-label="XR viewer actions" style="display:none;">
+            <div class="viewer-toolbar-controls">
+                <div class="scene-theme-control">
+                    <span class="scene-theme-label">3D scene appearance</span>
+                    <button class="scene-theme-button" id="sceneThemeBtn" type="button" aria-pressed="false">
+                        <span id="sceneThemeIcon" aria-hidden="true">☀</span>
+                        <span id="sceneThemeText">Switch to light scene</span>
+                    </button>
+                </div>
+                <label class="scene-metric-control" for="sceneMetricSelect">
+                    <span>Skeleton error metric</span>
+                    <select id="sceneMetricSelect" aria-label="Skeleton error comparison metric">
+                        <option value="angle">Joint angle</option>
+                        <option value="position">Position</option>
+                        <option value="velocity">Velocity</option>
+                        <option value="flux">Motion flux</option>
+                    </select>
+                </label>
+            </div>
+            <div class="viewer-action-note">Theme changes only the 3D environment. The selected metric controls skeleton heatmaps and error arrows.</div>
+        </div>
+
+        <div class="wall-panel-controls" aria-label="Wall panel visibility controls">
+            <span class="wall-panel-controls-label">Wall panels</span>
+            <div class="wall-panel-controls-buttons">
+                <button class="wall-panel-toggle" id="heatmapWallToggleBtn" type="button" aria-pressed="false">Show Heatmap Wall</button>
+                <button class="wall-panel-toggle" id="dtwWallToggleBtn" type="button" aria-pressed="false">Show DTW Wall</button>
+            </div>
+        </div>
+
+        <div id="app">
+            <div id="viewer">
+                <div id="loading">Loading motion data...</div>
+                <div id="hud"></div>
+            </div>
+
+            <div id="sidePanel">
+                <h2>Motion Heatmap Viewer</h2>
+                <div class="card">
+                    <h3>Dataset</h3>
+                    <select id="datasetSelect" style="width:100%;"></select>
+                    <div class="small" id="datasetStatus">Loading dataset list...</div>
+                </div>
+                <div class="small" id="metadataBox"></div>
+
+                <div class="card">
+                    <h3>Error Controls</h3>
+                    <div class="row">
+                        <select id="metricSelect">
+                            <option value="angle">Angle</option>
+                            <option value="position">Position</option>
+                            <option value="velocity">Velocity</option>
+                            <option value="flux">Flux</option>
+                        </select>
+                        <select id="statSelect">
+                            <option value="max">Peak / Max</option>
+                            <option value="mean">Mean</option>
+                            <option value="std">Std</option>
+                        </select>
+                    </div>
+                    <div id="legendGradient"></div>
+                    <div class="row small" style="justify-content:space-between;">
+                        <span>low error</span><span>high error</span>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3>Current Phase</h3>
+                    <div id="phaseInfo" class="small"></div>
+                </div>
+
+                <div class="card">
+                    <h3>Body-Part Error</h3>
+                    <div id="errorBars"></div>
+                </div>
+
+                <div class="card">
+                    <h3>DTW Mapping</h3>
+                    <div id="dtwInfo" class="small"></div>
+                </div>
+
+                <div class="card">
+                    <h3>View</h3>
+                    <div class="row">
+                        <button class="secondary" onclick="setCameraPreset('front')">Front</button>
+                        <button class="secondary" onclick="setCameraPreset('side')">Side</button>
+                        <button class="secondary" onclick="setCameraPreset('top')">Top</button>
+                        <button class="secondary" onclick="setCameraPreset('iso')">Iso</button>
+                    </div>
+                    <div class="row small">
+                        <label><input type="checkbox" id="showTrails" checked> Trails</label>
+                        <label><input type="checkbox" id="showJoints" checked> Joints</label>
+                        <label><input type="checkbox" id="showFloor" checked> Floor</label>
+                        <label><input type="checkbox" id="showReferenceSkeleton" checked> Reference skeleton</label>
+                        <label><input type="checkbox" id="showLearnerSkeleton" checked> Learner skeleton</label>
+                        <label><input type="checkbox" id="showGhostReference" checked> Ghost reference</label>
+                        <label><input type="checkbox" id="showGhostLearner" checked> Ghost learner</label>
+                        <label><input type="checkbox" id="showCorrectionArrows" checked> Pause arrows</label>
+                    </div>
+                    <div class="small" style="margin-top:8px;">
+                        Mouse: left drag rotate | right/middle drag pan | wheel zoom
+                    </div>
+                    <div class="row small" style="margin-top:8px;">
+                        <span>Body size</span>
+                        <input id="bodyScaleSlider" type="range" min="50" max="200" value="100" style="width:150px;">
+                        <span id="bodyScaleLabel">200%</span>
+                    </div>
+                    <div class="row small" style="margin-top:8px;">
+                        <span>Reference ghost opacity</span>
+                        <input id="ghostOpacitySlider" type="range" min="5" max="80" value="30" style="width:150px;">
+                        <span id="ghostOpacityLabel">30%</span>
+                    </div>
+                    <div class="row">
+                        <button class="secondary" onclick="resetOrbitView()">Reset View</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="bottomPanel">
+                <div class="row">
+                    <button id="playBtn">Play</button>
+                    <button class="secondary" id="prevFrameBtn">B Prev Phase</button>
+                    <button class="secondary" id="nextFrameBtn">N Next Phase</button>
+                    <button class="secondary" id="prevPhaseBtn">← Phase</button>
+                    <button class="secondary" id="nextPhaseBtn">Phase →</button>
+                    <button class="secondary" id="phaseStartBtn">Home</button>
+                    <button class="secondary" id="phaseEndBtn">End</button>
+                    <span class="small">Speed</span>
+                    <input id="speedSlider" type="range" min="0.2" max="2.0" step="0.1" value="1.0" style="width:130px;">
+                    <span id="speedLabel" class="small">1.0×</span>
+                </div>
+                <div style="display:grid; grid-template-columns: 1fr 340px; gap:12px; align-items:start;">
+                    <div>
+                        <div class="row small" style="justify-content:space-between;">
+                            <span>Frame: <b id="frameLabel">0</b></span>
+                            <span id="timeLabel"></span>
+                        </div>
+                        <input id="frameSlider" type="range" min="0" max="1" value="0">
+                        <div id="phaseTimeline"></div>
+                    </div>
+                    <canvas id="curveCanvas" width="520" height="120"></canvas>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <center>
+        <div id="vrButtonMount" class="vr-button-mount"></div>
+        <div style="padding-top: 0.3cm;">Use VR Headset to use VR mode</div>
+    </center>
+
+    <section class="analysis-dashboard" id="analysis-dashboard">
+        <div class="analysis-header">
+            <div>
+                <span class="analysis-eyebrow">Browser dashboard</span>
+                <h2>Live movement analysis</h2>
+                <p>The analysis follows the current playback frame and remains outside the immersive VR scene.</p>
+            </div>
+            <div class="analysis-status" aria-live="polite">
+                <span class="status-dot"></span>
+                <span id="webGraphInfo">Waiting for motion data</span>
+            </div>
+        </div>
+
+        <div class="analysis-toolbar">
+            <label>
+                <span>Comparison metric</span>
+                <select id="webMetricSelect">
+                    <option value="position">Position</option>
+                    <option value="velocity">Velocity</option>
+                    <option value="flux">Motion flux</option>
+                    <option value="angle" selected>Joint angle</option>
+                </select>
+            </label>
+            <label>
+                <span>Summary statistic</span>
+                <select id="webStatSelect">
+                    <option value="max" selected>Peak / maximum</option>
+                    <option value="mean">Mean</option>
+                    <option value="std">Standard deviation</option>
+                </select>
+            </label>
+            <div class="analysis-legend" aria-label="Graph legend">
+                <span><i class="legend-line reference"></i>Reference</span>
+                <span><i class="legend-line learner"></i>Learner</span>
+                <span><i class="legend-line current"></i>Current frame</span>
+            </div>
+        </div>
+
+        <div class="analysis-layout">
+            <article class="analysis-chart analysis-chart-primary">
+                <div class="chart-heading">
+                    <div>
+                        <span class="chart-kicker">Phase comparison</span>
+                        <h3>Body-part error across phases</h3>
+                    </div>
+                    <span class="chart-note">Updates during playback</span>
+                </div>
+                <div class="canvas-shell canvas-shell-wide">
+                    <canvas id="webErrorGraph" class="analysis-canvas" width="1200" height="360"></canvas>
+                </div>
+            </article>
+
+            <article class="analysis-chart">
+                <div class="chart-heading">
+                    <div>
+                        <span class="chart-kicker">Full sequence</span>
+                        <h3>DTW alignment overview</h3>
+                    </div>
+                </div>
+                <div class="canvas-shell canvas-shell-square">
+                    <canvas id="webDTWOverview" class="analysis-canvas" width="1000" height="760"></canvas>
+                </div>
+            </article>
+
+            <article class="analysis-chart">
+                <div class="chart-heading">
+                    <div>
+                        <span class="chart-kicker">Selected interval</span>
+                        <h3>Current phase alignment</h3>
+                    </div>
+                </div>
+                <div class="canvas-shell canvas-shell-square">
+                    <canvas id="webDTWPhase" class="analysis-canvas" width="1300" height="760"></canvas>
+                </div>
+            </article>
+
+            <article class="analysis-chart analysis-chart-summary">
+                <div class="chart-heading">
+                    <div>
+                        <span class="chart-kicker">Current correspondence</span>
+                        <h3>Frame mapping and timing</h3>
+                    </div>
+                </div>
+                <div class="canvas-shell canvas-shell-summary">
+                    <canvas id="webDTWInfo" class="analysis-canvas" width="1600" height="250"></canvas>
+                </div>
+            </article>
+        </div>
+    </section>
+</main>
+
+<footer>
+    <div class="page">
+        <div class="footer-content">
+            <div>
+                <strong>Suleman Anwar</strong><br>
+                Master's in Imaging and Light in Extended Reality (IMLEX) (2024 Cohort)
+            </div>
+
+            <div class="footer-links">
+                <a href="mailto:suleman.anwar.424@gmail.com">
+                    suleman.anwar.424@gmail.com
+                </a>
+                <span>•</span>
+                <a href="https://www.linkedin.com/in/suleman-anwar-2ba4a51a6/"
+                   target="_blank"
+                   rel="noopener noreferrer">
+                    LinkedIn
+                </a>
+            </div>
+        </div>
+    </div>
+</footer>
+<script type="module">
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
+import { VRButton } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/webxr/VRButton.js';
+let DATA = null;
+let scene, camera, renderer;
+let sceneTheme = 'dark';
+let xrUserRig = null;
+let floorMesh, gridHelper, roomGroup;
+let skeletonFloorCircleGroup = null;
+let wallHeatmapPanel = null;
+let wallControlObjects = [];
+let wallGraphMesh = null;
+let wallPanelInfoMesh = null;
+let rightWallDTWPanel = null;
+let rightWallDTWOverviewMesh = null;
+let rightWallDTWPhaseMesh = null;
+let rightWallDTWInfoMesh = null;
+let refSkeleton, learnerSkeleton, centerReferenceSkeleton, ghostSkeleton;
+let correctionArrows = [];
+let orbitTarget, orbitRadius, orbitTheta, orbitPhi;
+// ============================================================
+// SKELETON SIZE SETTINGS
+// ============================================================
+// Change this value in code when you want bigger/smaller skeletons.
+// 1.0 = normal human-like size for this viewer.
+// 1.2 = 20% larger, 0.8 = 20% smaller.
+const SKELETON_SIZE_MULTIPLIER = 1.4;
+
+// Converts the normalized SMPL-X joint coordinates into scene metres.
+// Usually keep this at 0.3 and adjust SKELETON_SIZE_MULTIPLIER instead.
+const BODY_SCALE = 0.3;
+let bodyDisplayScale = SKELETON_SIZE_MULTIPLIER;
+
+// ============================================================
+// ROOM / WALL / PANEL SIZE CONTROLS
+// ============================================================
+// Change these values to make the XR room bigger/smaller.
+// All floor, walls, wall panels, and skeleton spacing use these constants.
+const ROOM_SIZE = 11.2;          // was 8.8. Bigger floor and wider walls.
+const ROOM_HEIGHT = 5.2;        // was 4.2. Taller walls.
+
+// Wall panel scale/height settings. Increase these if the room becomes larger.
+const HEATMAP_PANEL_SCALE = 1.34;
+const DTW_PANEL_SCALE = 1.12;
+const HEATMAP_PANEL_HEIGHT_RATIO = 0.73;  // fraction of wall height from floor
+const DTW_PANEL_HEIGHT_RATIO = 0.66;
+
+// Skeleton spacing uses room size, so widening the room separates skeletons automatically.
+// Change SIDE_SKELETON_ROOM_FRACTION if you want more/less separation.
+const SIDE_SKELETON_ROOM_FRACTION = 0.24;
+
+// Circle size follows skeleton size. Change these only if the floor circles look too small/large.
+const SKELETON_CIRCLE_INNER_RADIUS = 0.24 * SKELETON_SIZE_MULTIPLIER;
+const SKELETON_CIRCLE_OUTER_RADIUS = 0.27 * SKELETON_SIZE_MULTIPLIER;
+
+// ============================================================
+// STARTING VIEWPOINT / RAYCAST TELEPORT CONTROLS
+// ============================================================
+// Change this to control the initial VR/user distance. Larger = farther, smaller = closer.
+// The user starts on the viewer side of the room and looks toward the skeletons.
+const START_VIEW_DISTANCE_FROM_SKELETONS = 6.0;
+const START_VIEW_EYE_HEIGHT = 1.45;
+const START_VIEW_SIDE_OFFSET = 0.0;
+
+// Raycast placement settings. These use ROOM_SIZE so they keep working when the room grows.
+const ROOM_PLACEMENT_WALL_MARGIN = 0.55;
+const RAYCAST_VIEW_EYE_HEIGHT = 1.45;
+let currentFrame = 0;
+let playing = false;
+let playTimer = null;
+const BASE_PLAYBACK_MS = 35;
+let playbackSpeed = 1.0;
+let playbackMs = BASE_PLAYBACK_MS;
+let metric = "angle";
+let statMode = "max";
+let phasePauseActive = false;
+let phasePauseSeen = new Set();
+let lastPhaseId = null;
+
+// ============================================================
+// CENTER PLAY/PAUSE ANCHOR STATE
+// ============================================================
+// floorCoordinateAnchor is the fixed world/floor coordinate system.
+// playButtonAnchor is only the alignment handle for:
+//   - center play/pause button
+//   - skeleton groups
+//   - text labels above those skeleton groups
+// Floor, trails, camera, panels, and other scene objects are NOT children of playButtonAnchor.
+let floorCoordinateAnchor = null;
+let skeletonAnchor = null;
+let playButtonAnchor = null; // kept as alias for older helper names; transport buttons are now camera-locked
+let centerPreviousButton = null;
+let centerPlayPauseButton = null;
+let centerNextButton = null;
+let centerSpeedSlider = null;
+let centerSpeedSliderHitArea = null;
+let centerMenuToggleButton = null;
+let centerExitVRButton = null;
+let centerSceneThemeButton = null;
+let centerMetricButton = null;
+let centerHeatmapWallToggleButton = null;
+let centerDTWWallToggleButton = null;
+let centerReferenceToggleButton = null;
+let centerLearnerToggleButton = null;
+let centerGhostReferenceToggleButton = null;
+let centerGhostLearnerToggleButton = null;
+let centerArrowsToggleButton = null;
+let referenceFloorMarkerGroup = null;
+let learnerFloorMarkerGroup = null;
+let ghostLearnerFloorMarkerGroup = null;
+let transportControlsVisible = false;
+// Keep the startup state compatible with the working viewer.
+// The wall panels are switched off only after the scene has been built,
+// so wall visibility can never interfere with motion-data initialization.
+let heatmapWallVisible = true;
+let dtwWallVisible = true;
+let activeXRSliderController = null;
+let centerPlayPauseButtonText = null;
+let playButtonRaycaster = new THREE.Raycaster();
+let playButtonPointer = new THREE.Vector2();
+let roomPlacementRaycaster = new THREE.Raycaster();
+let roomPlacementSurfaces = [];
+
+// ============================================================
+// QUEST 3 / WEBXR CONTROLLER RAYCAST STATE
+// ============================================================
+let xrController1 = null;
+let xrController2 = null;
+let xrControllerGrip1 = null;
+let xrControllerGrip2 = null;
+let xrControllerRayLine1 = null;
+let xrControllerRayLine2 = null;
+let xrRaycaster = new THREE.Raycaster();
+let xrTempMatrix = new THREE.Matrix4();
+let xrPreviousSelectPressed = false;
+let xrLastSelectTimeMs = 0;
+let xrControlTargets = [];
+let pointerDownInfo = null;
+let pointerDownHit3DControl = false;
+let speedSliderDragging = false;
+const SPEED_SLIDER_VISIBLE_WIDTH = 0.86;
+const SPEED_SLIDER_VISIBLE_HEIGHT = 0.24;
+const SPEED_SLIDER_HIT_WIDTH = 1.34;
+const SPEED_SLIDER_HIT_HEIGHT = 0.42;
+
+const PLAY_BUTTON_ANCHOR_POSITION = new THREE.Vector3(0.0, -0.3, 0.0);
+const PLAY_BUTTON_ANCHOR_ROTATION = new THREE.Euler(0.0, 0.0, 0.0);
+const PLAY_BUTTON_ANCHOR_SCALE = 1.0;
+
+// Skeleton placement relative to the play button anchor.
+// The floor itself stays under floorCoordinateAnchor, not under the button.
+const SKELETON_LOCAL_Y_OFFSET = -0.78;
+const SKELETON_LOCAL_Z_OFFSET = 0.32;
+
+// Side-by-side skeleton spacing. Increase SIDE_SKELETON_X if they overlap;
+// decrease it if they are too far apart.
+const SIDE_SKELETON_X = ROOM_SIZE * SIDE_SKELETON_ROOM_FRACTION;
+const REF_OFFSET = {x: -SIDE_SKELETON_X, y: 0.3, z: 1};
+const LEARNER_OFFSET = {x: SIDE_SKELETON_X, y: 0.3, z: 1};
+const GHOST_OFFSET = {x: 0.0, y: 0.3, z: 1};
+const DEFAULT_CAMERA_TARGET = new THREE.Vector3(0, 0.55, GHOST_OFFSET.z);
+const MIN_ORBIT_RADIUS = 0.7;
+const MAX_ORBIT_RADIUS = Math.max(18.0, ROOM_SIZE * 2.0);
+
+function $(id) { return document.getElementById(id); }
+function setLoadingMessage(text) {
+    const el = $('loading');
+    if (el) {
+        el.style.display = 'block';
+        el.innerText = text;
+    }
+}
+function showViewerFatalError(err, context='') {
+    console.error(context || 'Viewer error', err);
+    const message = (err && (err.stack || err.message)) ? (err.stack || err.message) : String(err || 'Unknown error');
+    setLoadingMessage('Viewer error' + (context ? ' (' + context + ')' : '') + ':\n' + message);
+}
+window.addEventListener('error', event => showViewerFatalError(event.error || event.message, 'JavaScript error'));
+window.addEventListener('unhandledrejection', event => showViewerFatalError(event.reason, 'Unhandled promise'));
+
+async function fetchJSONWithTimeout(url, timeoutMs=10000) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+        const response = await fetch(url, { signal: controller.signal, cache: 'no-store' });
+        if (!response.ok) throw new Error(url + ' returned HTTP ' + response.status);
+        return await response.json();
+    } finally {
+        clearTimeout(timer);
+    }
+}
+function clamp01(v) { return Math.max(0, Math.min(1, Number(v || 0))); }
+
+function applyBodyDisplayScale() {
+    if (refSkeleton) refSkeleton.group.scale.set(bodyDisplayScale, bodyDisplayScale, bodyDisplayScale);
+    if (ghostSkeleton) ghostSkeleton.group.scale.set(bodyDisplayScale, bodyDisplayScale, bodyDisplayScale);
+    if (centerReferenceSkeleton) centerReferenceSkeleton.group.scale.set(bodyDisplayScale, bodyDisplayScale, bodyDisplayScale);
+    if (learnerSkeleton) learnerSkeleton.group.scale.set(bodyDisplayScale, bodyDisplayScale, bodyDisplayScale);
+
+    // Runtime slider support: floor circles scale visually with the skeleton size too.
+    const markerScale = bodyDisplayScale / Math.max(SKELETON_SIZE_MULTIPLIER, 0.001);
+    for (const marker of [referenceFloorMarkerGroup, learnerFloorMarkerGroup, ghostLearnerFloorMarkerGroup]) {
+        if (marker) marker.scale.set(markerScale, markerScale, markerScale);
+    }
+    syncFloorMarkersWithSkeletons();
+}
+
+function lerpColor(low, high, t) {
+    t = clamp01(t);
+    return new THREE.Color(
+        low[0] + (high[0] - low[0]) * t,
+        low[1] + (high[1] - low[1]) * t,
+        low[2] + (high[2] - low[2]) * t
+    );
+}
+
+function getColorForError(v) {
+    return lerpColor(DATA.low_error_color, DATA.high_error_color, v);
+}
+
+function sanitizeMetric() {
+    if (metric === 'auto') metric = 'angle';
+}
+
+function phaseForFrame(index) {
+    const meta = DATA.frame_meta[index];
+    return DATA.phases.find(p => Number(p.phase_id) === Number(meta.phase_id)) || DATA.phases[0];
+}
+
+function comparisonForPhase(phaseId) {
+    return DATA.comparisons[String(phaseId)] || {};
+}
+
+async function init() {
+    // Do not block the viewer on datasets.json. In the VR-only version the dataset
+    // dropdown is hidden, so a slow/missing datasets.json should never leave the
+    // page stuck on "Loading motion data".
+    window.DEFAULT_DATASET_FILE = 'data/experiment_01.json';
+    setupDatasetSelector().catch(err => {
+        console.warn('Dataset selector setup skipped:', err);
+    });
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const datasetFile = urlParams.get('data') || window.DEFAULT_DATASET_FILE || 'data/experiment_01.json';
+    const cacheBust = datasetFile.includes('?') ? '&v=' + Date.now() : '?v=' + Date.now();
+
+    setLoadingMessage('Loading motion data ... ');
+
+    try {
+        DATA = await fetchJSONWithTimeout(datasetFile + cacheBust, 15000);
+    } catch (err) {
+        // Second try without cache-busting. Some simple/static hosts or local servers
+        // behave badly with query strings on JSON files.
+        console.warn('First data fetch failed, retrying without cache-bust:', err);
+        setLoadingMessage('Retrying motion data without cache-bust: ' + datasetFile);
+        DATA = await fetchJSONWithTimeout(datasetFile, 15000);
+    }
+
+    if (!DATA || !DATA.metadata || !Array.isArray(DATA.frame_meta)) {
+        throw new Error('Dataset loaded, but it does not look like a valid motion JSON: ' + datasetFile);
+    }
+
+    setLoadingMessage('Building VR scene...');
+    setupScene();
+    setupSkeletons();
+    applyTransportControlsVisibility();
+    applyBodyDisplayScale();
+    setupControls();
+    setupWebAnalysisControls();
+    updateMetadata();
+    updateFrame(0);
+    animate();
+
+    const loadingEl = $('loading');
+    if (loadingEl) {
+        loadingEl.style.display = 'none';
+        loadingEl.remove();
+    }
+}
+
+async function setupDatasetSelector() {
+    const selector = $('datasetSelect');
+    const status = $('datasetStatus');
+    if (!selector) return;
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const currentFile = urlParams.get('data');
+
+    let datasets = [];
+    try {
+        datasets = await fetchJSONWithTimeout('datasets.json?v=' + Date.now(), 2500);
+    } catch (err) {
+        console.warn('datasets.json not found or timed out. Falling back to data/experiment_01.json', err);
+    }
+
+    if (!Array.isArray(datasets) || datasets.length === 0) {
+        datasets = [{ name: 'Experiment 01', file: 'data/experiment_01.json' }];
+    }
+
+    window.DEFAULT_DATASET_FILE = datasets[0].file;
+    selector.innerHTML = '';
+
+    for (const item of datasets) {
+        const option = document.createElement('option');
+        option.value = item.file;
+        option.textContent = item.name || item.file;
+        selector.appendChild(option);
+    }
+
+    selector.value = currentFile || window.DEFAULT_DATASET_FILE;
+    status.innerText = 'Selected: ' + selector.value;
+
+    selector.addEventListener('change', () => {
+        const selected = selector.value;
+        const newUrl = new URL(window.location.href);
+        newUrl.searchParams.set('data', selected);
+        window.location.href = newUrl.toString();
+    });
+}
+
+
+function getStartingCameraPosition() {
+    // Starting viewpoint is controlled by START_VIEW_DISTANCE_FROM_SKELETONS.
+    // It is measured backward from the skeleton look target along the room's -Z direction.
+    return new THREE.Vector3(
+        START_VIEW_SIDE_OFFSET,
+        SKELETON_LOCAL_Y_OFFSET + START_VIEW_EYE_HEIGHT,
+        DEFAULT_CAMERA_TARGET.z - START_VIEW_DISTANCE_FROM_SKELETONS
+    );
+}
+
+function getRoomPlacementBounds() {
+    const half = ROOM_SIZE * 0.5;
+    return {
+        minX: -half + ROOM_PLACEMENT_WALL_MARGIN,
+        maxX: half - ROOM_PLACEMENT_WALL_MARGIN,
+        minZ: -half + ROOM_PLACEMENT_WALL_MARGIN,
+        maxZ: half - ROOM_PLACEMENT_WALL_MARGIN
+    };
+}
+
+
+
+function applySceneTheme(theme) {
+    sceneTheme = theme === 'light' ? 'light' : 'dark';
+    const lightMode = sceneTheme === 'light';
+
+    if (scene) {
+        scene.background = new THREE.Color(lightMode ? 0xe8eef5 : 0x0b1020);
+
+        const ambient = scene.getObjectByName('SCENE_AMBIENT_LIGHT');
+        const directional = scene.getObjectByName('SCENE_DIRECTIONAL_LIGHT');
+        if (ambient) ambient.intensity = lightMode ? 1.05 : 0.65;
+        if (directional) directional.intensity = lightMode ? 1.15 : 0.9;
+    }
+
+    if (floorMesh && floorMesh.material) {
+        floorMesh.material.color.setHex(lightMode ? 0xcbd5e1 : 0x1f2937);
+        floorMesh.material.roughness = lightMode ? 0.92 : 0.85;
+        floorMesh.material.needsUpdate = true;
+    }
+
+    if (gridHelper && gridHelper.material) {
+        const materials = Array.isArray(gridHelper.material) ? gridHelper.material : [gridHelper.material];
+        materials.forEach((material, index) => {
+            material.color.setHex(lightMode ? (index === 0 ? 0x64748b : 0x94a3b8) : (index === 0 ? 0x64748b : 0x334155));
+            material.opacity = lightMode ? 0.52 : 1.0;
+            material.transparent = lightMode;
+            material.needsUpdate = true;
+        });
+    }
+
+    if (roomGroup) {
+        roomGroup.traverse((object) => {
+            if (!object.material) return;
+            const materials = Array.isArray(object.material) ? object.material : [object.material];
+            materials.forEach((material) => {
+                if (material.isMeshStandardMaterial) {
+                    material.color.setHex(lightMode ? 0xdbe4ee : 0x111827);
+                    material.opacity = lightMode ? 0.22 : 0.34;
+                    material.transparent = true;
+                    material.needsUpdate = true;
+                } else if (material.isLineBasicMaterial) {
+                    material.color.setHex(lightMode ? 0x64748b : 0x64748b);
+                    material.opacity = lightMode ? 0.42 : 0.55;
+                    material.needsUpdate = true;
+                }
+            });
+        });
+    }
+
+    const button = document.getElementById('sceneThemeBtn');
+    if (button) {
+        const icon = document.getElementById('sceneThemeIcon');
+        const text = document.getElementById('sceneThemeText');
+        if (icon) icon.textContent = lightMode ? '☾' : '☀';
+        if (text) text.textContent = lightMode ? 'Switch to dark scene' : 'Switch to light scene';
+        button.setAttribute('aria-pressed', lightMode ? 'true' : 'false');
+        button.title = lightMode ? 'Switch the 3D scene to dark mode' : 'Switch the 3D scene to light mode';
+    }
+
+    if (centerSceneThemeButton) refreshViewerSettingsButtons();
+
+    // Rebuild every 3D button texture so all controls match the selected scene theme.
+    updateCenterPlayPauseButton();
+    updateCenterMenuToggleButton();
+    refreshTransportControlButtons();
+    refreshVisibilityToggleButtons();
+}
+
+function setupSceneThemeToggle() {
+    const button = document.getElementById('sceneThemeBtn');
+    if (!button || button.dataset.ready === 'true') return;
+    button.dataset.ready = 'true';
+    button.addEventListener('click', () => {
+        applySceneTheme(sceneTheme === 'dark' ? 'light' : 'dark');
+    });
+    applySceneTheme(sceneTheme);
+}
+
+function setupScene() {
+    const container = $('viewer');
+    scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x0b1020);
+
+    camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.01, 1000);
+
+    // XR user rig: in WebXR, headset pose overrides camera.position.
+    // Moving this rig is the reliable way to move/teleport the user in VR.
+    xrUserRig = new THREE.Group();
+    xrUserRig.name = 'XR_USER_RIG_MOVE_THIS_FOR_VR_START_AND_TELEPORT';
+    scene.add(xrUserRig);
+    xrUserRig.add(camera);
+
+    camera.position.copy(getStartingCameraPosition());
+    camera.lookAt(DEFAULT_CAMERA_TARGET);
+
+    renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setPixelRatio(window.devicePixelRatio || 1);
+    renderer.setSize(container.clientWidth, container.clientHeight);
+    renderer.xr.enabled = true;
+    renderer.xr.addEventListener('sessionstart', resetXRUserStartPosition);
+    renderer.xr.addEventListener('sessionend', restoreDesktopCameraAfterXR);
+    container.appendChild(renderer.domElement);
+
+    // Meta Quest 3 / WebXR button.
+    // In Quest Browser, this button should appear as ENTER VR when the page is served from
+    // a WebXR-compatible secure context. It may be unavailable on plain HTTP.
+    const vrButton = VRButton.createButton(renderer);
+    vrButton.id = 'vrButton';
+    // Place ENTER VR directly under the "Interactive XR Viewer" heading.
+    // The page provides #vrButtonMount in that section.
+    vrButton.style.position = 'relative';
+    vrButton.style.left = 'auto';
+    vrButton.style.bottom = 'auto';
+    vrButton.style.margin = '14px auto 18px auto';
+    vrButton.style.display = 'inline-flex';
+    vrButton.style.zIndex = '20';
+
+    const vrButtonMount = document.getElementById('vrButtonMount');
+    if (vrButtonMount) {
+        vrButtonMount.appendChild(vrButton);
+    } else {
+        document.body.appendChild(vrButton);
+    }
+
+    setupXRControllerRaycasting();
+
+    // Create an invisible floor coordinate system first.
+    // The play button is linked to this floor coordinate system.
+    setupFloorCoordinateAnchor();
+    setupSkeletonAnchor();
+    createCenterTransportButtons();
+    installCenterTransportButtonClicks(container);
+    installRoomPlacementRaycastControls(container);
+
+    orbitTarget = getSkeletonLookTargetWorld();
+    camera.lookAt(orbitTarget);
+    setOrbitFromCamera();
+    installMouseOrbitControls(container);
+
+    const ambient = new THREE.AmbientLight(0xffffff, 0.65);
+    ambient.name = 'SCENE_AMBIENT_LIGHT';
+    scene.add(ambient);
+
+    const directional = new THREE.DirectionalLight(0xffffff, 0.9);
+    directional.name = 'SCENE_DIRECTIONAL_LIGHT';
+    directional.position.set(3, 5, 4);
+    scene.add(directional);
+
+    // Room enclosure. Size is controlled by ROOM_SIZE and ROOM_HEIGHT near the top of the file.
+    const floorGeo = new THREE.PlaneGeometry(ROOM_SIZE, ROOM_SIZE);
+    const floorMat = new THREE.MeshStandardMaterial({
+        color: 0x1f2937,
+        roughness: 0.85,
+        metalness: 0.0,
+        side: THREE.DoubleSide
+    });
+    floorMesh = new THREE.Mesh(floorGeo, floorMat);
+    floorMesh.rotation.x = -Math.PI / 2;
+    floorMesh.position.set(0, SKELETON_LOCAL_Y_OFFSET, SKELETON_LOCAL_Z_OFFSET);
+    addToFloorCoordinateAnchor(floorMesh);
+    roomPlacementSurfaces.push(floorMesh);
+
+    gridHelper = new THREE.GridHelper(ROOM_SIZE, Math.round(ROOM_SIZE * 2.5), 0x64748b, 0x334155);
+    gridHelper.position.set(0, SKELETON_LOCAL_Y_OFFSET + 0.002, SKELETON_LOCAL_Z_OFFSET);
+    addToFloorCoordinateAnchor(gridHelper);
+
+    createRoom(ROOM_SIZE, ROOM_HEIGHT);
+
+    // Initial wall state: hidden until the user explicitly chooses to show them.
+    // This runs only after DATA has loaded and the room/panels exist. Nothing in
+    // the JSON-loading path depends on these visibility flags.
+    heatmapWallVisible = false;
+    dtwWallVisible = false;
+    applyWallPanelVisibility();
+
+    createSkeletonFloorCircle();
+    setupSceneThemeToggle();
+    applySceneTheme(sceneTheme);
+
+    const axis = new THREE.AxesHelper(0.45);
+    axis.position.set(-ROOM_SIZE / 2 + 0.25, SKELETON_LOCAL_Y_OFFSET + 0.02, SKELETON_LOCAL_Z_OFFSET - ROOM_SIZE / 2 + 0.25);
+    addToFloorCoordinateAnchor(axis);
+
+    window.addEventListener('resize', () => {
+        // IMPORTANT: WebXR owns the render target size while immersive VR is active.
+        // Calling renderer.setSize() during VR presentation can make the headset view go blank.
+        if (renderer && renderer.xr && renderer.xr.isPresenting) return;
+        renderer.setSize(container.clientWidth, container.clientHeight);
+        camera.aspect = container.clientWidth / container.clientHeight;
+        camera.updateProjectionMatrix();
+    });
+}
+
+
+// ============================================================
+// QUEST 3 / WEBXR CONTROLLER RAYCASTING
+// ============================================================
+function makeXRControllerRayLine() {
+    const geometry = new THREE.BufferGeometry().setFromPoints([
+        new THREE.Vector3(0, 0, 0),
+        new THREE.Vector3(0, 0, -4.0)
+    ]);
+    const material = new THREE.LineBasicMaterial({
+        color: 0xffffff,
+        transparent: true,
+        opacity: 0.85
+    });
+    const line = new THREE.Line(geometry, material);
+    line.name = 'questControllerRayLine';
+    line.visible = true;
+    return line;
+}
+
+function setupXRControllerRaycasting() {
+    xrController1 = renderer.xr.getController(0);
+    xrController2 = renderer.xr.getController(1);
+
+    xrController1.addEventListener('selectstart', () => handleXRControllerSelect(xrController1));
+    xrController2.addEventListener('selectstart', () => handleXRControllerSelect(xrController2));
+
+    // Some Quest hand-tracking sessions fire select instead of selectstart consistently.
+    xrController1.addEventListener('select', () => handleXRControllerSelect(xrController1));
+    xrController2.addEventListener('select', () => handleXRControllerSelect(xrController2));
+    xrController1.addEventListener('selectend', () => { if (activeXRSliderController === xrController1) activeXRSliderController = null; });
+    xrController2.addEventListener('selectend', () => { if (activeXRSliderController === xrController2) activeXRSliderController = null; });
+
+    // Grip button: teleport/reposition the VR user to the surface pointed by the ray.
+    // This is separate from trigger/select, so teleport still works even when trigger is used for UI buttons.
+    xrController1.addEventListener('squeezestart', () => handleXRControllerTeleport(xrController1));
+    xrController2.addEventListener('squeezestart', () => handleXRControllerTeleport(xrController2));
+
+    xrControllerRayLine1 = makeXRControllerRayLine();
+    xrControllerRayLine2 = makeXRControllerRayLine();
+
+    xrController1.add(xrControllerRayLine1);
+    xrController2.add(xrControllerRayLine2);
+
+    if (xrUserRig) {
+        xrUserRig.add(xrController1);
+        xrUserRig.add(xrController2);
+    } else {
+        scene.add(xrController1);
+        scene.add(xrController2);
+    }
+}
+
+function refreshXRControlTargets() {
+    xrControlTargets = [];
+
+    // Wall metric/stat buttons.
+    if (Array.isArray(wallControlObjects) && heatmapWallVisible && (!wallHeatmapPanel || wallHeatmapPanel.visible)) {
+        for (const obj of wallControlObjects) {
+            if (obj && obj.visible) xrControlTargets.push(obj);
+        }
+    }
+
+    // Center transport buttons and speed slider.
+    const maybeTargets = [
+        centerPreviousButton,
+        centerPlayPauseButton,
+        centerNextButton,
+        centerMenuToggleButton,
+        centerExitVRButton,
+        centerSceneThemeButton,
+        centerMetricButton,
+        centerHeatmapWallToggleButton,
+        centerDTWWallToggleButton,
+        centerReferenceToggleButton,
+        centerLearnerToggleButton,
+        centerGhostLearnerToggleButton,
+        centerSpeedSliderHitArea,
+        centerSpeedSlider
+    ];
+
+    for (const obj of maybeTargets) {
+        if (obj && obj.visible) xrControlTargets.push(obj);
+    }
+}
+
+function getXRControllerIntersections(controller) {
+    refreshXRControlTargets();
+
+    if (!controller || xrControlTargets.length === 0) return [];
+
+    // Important for Quest/WebXR:
+    // 1) Sprite raycasting needs raycaster.camera.
+    // 2) Controller + scene matrices should be current before intersection tests.
+    scene.updateMatrixWorld(true);
+    controller.updateMatrixWorld(true);
+
+    if (renderer && renderer.xr && renderer.xr.isPresenting) {
+        xrRaycaster.camera = renderer.xr.getCamera(camera);
+    } else {
+        xrRaycaster.camera = camera;
+    }
+
+    xrTempMatrix.identity().extractRotation(controller.matrixWorld);
+    xrRaycaster.ray.origin.setFromMatrixPosition(controller.matrixWorld);
+    xrRaycaster.ray.direction.set(0, 0, -1).applyMatrix4(xrTempMatrix).normalize();
+
+    return xrRaycaster.intersectObjects(xrControlTargets, true);
+}
+
+function findXRClickableObject(hitObject) {
+    let obj = hitObject;
+    while (obj) {
+        if (obj.userData) {
+            if (obj.userData.wallAction) return obj;
+            if (obj.userData.centerButtonAction) return obj;
+            if (obj.userData.transportAction) return obj;
+            if (obj.userData.isSpeedSlider || obj.userData.speedSliderRole) return obj;
+        }
+        obj = obj.parent;
+    }
+    return hitObject;
+}
+
+
+function handleXRControllerTeleport(controller) {
+    const roomHits = getXRControllerRoomSurfaceIntersections(controller);
+    if (roomHits.length) {
+        moveViewpointToRoomPoint(roomHits[0].point);
+    }
+}
+
+function resetXRUserStartPosition() {
+    if (!xrUserRig || !camera) return;
+
+    // In VR, camera.position is controlled by the headset. Keep the camera local origin
+    // clean and move the rig instead. X/Z distance is controlled by START_VIEW_DISTANCE_FROM_SKELETONS.
+    camera.position.set(0, 0, 0);
+    camera.rotation.set(0, 0, 0);
+
+    const target = getSkeletonLookTargetWorld();
+    const startWorld = getStartingCameraPosition();
+    xrUserRig.position.set(startWorld.x, SKELETON_LOCAL_Y_OFFSET, startWorld.z);
+
+    // Yaw the rig toward the skeletons so the user starts facing the motion.
+    const dx = target.x - xrUserRig.position.x;
+    const dz = target.z - xrUserRig.position.z;
+    // Camera looks along local -Z. PI makes the headset face the skeleton target from the front/viewer side.
+    xrUserRig.rotation.y = Math.atan2(dx, dz) + Math.PI;
+}
+
+function restoreDesktopCameraAfterXR() {
+    if (!xrUserRig || !camera) return;
+    xrUserRig.position.set(0, 0, 0);
+    xrUserRig.rotation.set(0, 0, 0);
+    camera.position.copy(getStartingCameraPosition());
+    const target = getSkeletonLookTargetWorld();
+    orbitTarget.copy(target);
+    camera.lookAt(orbitTarget);
+    setOrbitFromCamera();
+}
+
+function getXRControllerRoomSurfaceIntersections(controller) {
+    if (!controller || !roomPlacementSurfaces || roomPlacementSurfaces.length === 0) return [];
+    scene.updateMatrixWorld(true);
+    controller.updateMatrixWorld(true);
+    if (renderer && renderer.xr && renderer.xr.isPresenting) {
+        xrRaycaster.camera = renderer.xr.getCamera(camera);
+    } else {
+        xrRaycaster.camera = camera;
+    }
+    xrTempMatrix.identity().extractRotation(controller.matrixWorld);
+    xrRaycaster.ray.origin.setFromMatrixPosition(controller.matrixWorld);
+    xrRaycaster.ray.direction.set(0, 0, -1).applyMatrix4(xrTempMatrix).normalize();
+    return xrRaycaster.intersectObjects(roomPlacementSurfaces, false);
+}
+
+function handleXRControllerSelect(controller) {
+    const now = performance.now();
+    if (now - xrLastSelectTimeMs < 180) return;
+    xrLastSelectTimeMs = now;
+
+    const hits = getXRControllerIntersections(controller);
+    if (!hits.length) {
+        const roomHits = getXRControllerRoomSurfaceIntersections(controller);
+        if (roomHits.length) moveViewpointToRoomPoint(roomHits[0].point);
+        return;
+    }
+
+    const hit = hits[0];
+    const obj = findXRClickableObject(hit.object);
+
+    // 1) Wall heatmap metric/stat buttons
+    if (obj.userData && obj.userData.wallAction) {
+        if (obj.userData.wallAction === 'metric') {
+            metric = obj.userData.wallValue;
+            if ($('metricSelect')) $('metricSelect').value = metric;
+        } else if (obj.userData.wallAction === 'stat') {
+            statMode = obj.userData.wallValue;
+            if ($('statSelect')) $('statSelect').value = statMode;
+        }
+        updateFrame(currentFrame);
+        pulseXRObject(obj);
+        return;
+    }
+
+    // 2) Center/floor 3D buttons, including floor visibility buttons.
+    if (obj.userData && (obj.userData.centerButtonAction || obj.userData.transportAction)) {
+        const action = obj.userData.centerButtonAction || obj.userData.transportAction;
+        if (action === 'play') togglePlay();
+        else if (action === 'prev' || action === 'previousPhase') { stopPlaybackForPhaseButton(); previousPhase(); }
+        else if (action === 'next' || action === 'nextPhase') { stopPlaybackForPhaseButton(); nextPhase(); }
+        else if (action === 'toggle' || action === 'toggleControls') toggleTransportControlsVisibility();
+        else if (action === 'exitVR') exitVRSession();
+        else if (action === 'cycleSceneTheme') cycleSceneThemeFrom3D();
+        else if (action === 'cycleMetric') cycleMetricFrom3D();
+        else if (action === 'toggleHeatmapWall') toggleHeatmapWallVisibility();
+        else if (action === 'toggleDTWWall') toggleDTWWallVisibility();
+        else if (action === 'toggleRef') toggleSkeletonVisibility('showReferenceSkeleton', centerReferenceToggleButton, 'Ref');
+        else if (action === 'toggleLearner') toggleSkeletonVisibility('showLearnerSkeleton', centerLearnerToggleButton, 'Learner');
+        else if (action === 'toggleGhostPair') toggleGhostLearnerAndArrows();
+        else if (action === 'speedSlider') {
+            activeXRSliderController = controller;
+            setSpeedFromXRSliderHit(hit);
+        }
+        pulseXRObject(obj);
+        return;
+    }
+
+    // 3) Center speed slider
+    if (obj.userData && (obj.userData.isSpeedSlider || obj.userData.speedSliderRole)) {
+        activeXRSliderController = controller;
+        setSpeedFromXRSliderHit(hit);
+        pulseXRObject(obj);
+        return;
+    }
+}
+
+function setSpeedFromXRSliderHit(hit) {
+    if (!centerSpeedSlider && !centerSpeedSliderHitArea) return;
+
+    const sliderObj = centerSpeedSliderHitArea || centerSpeedSlider;
+    const localPoint = sliderObj.worldToLocal(hit.point.clone());
+
+    // local x across the hit area maps to 0.2x - 2.0x
+    const halfWidth = SPEED_SLIDER_HIT_WIDTH * 0.5;
+    const t = clamp01((localPoint.x + halfWidth) / SPEED_SLIDER_HIT_WIDTH);
+
+    playbackSpeed = 0.2 + t * (2.0 - 0.2);
+    playbackSpeed = Math.round(playbackSpeed * 10) / 10;
+    playbackMs = BASE_PLAYBACK_MS / playbackSpeed;
+
+    if ($('speedSlider')) $('speedSlider').value = playbackSpeed.toFixed(1);
+    if ($('speedLabel')) $('speedLabel').innerText = playbackSpeed.toFixed(1) + '×';
+
+    if (playing) startPlayTimer();
+
+    // Redraw the 3D slider if the code has the helper.
+    if (typeof updateCenterSpeedSliderVisual === 'function') {
+        updateCenterSpeedSliderVisual();
+    } else if (typeof refreshCenterSpeedSlider === 'function') {
+        refreshCenterSpeedSlider();
+    }
+
+    updateFrame(currentFrame);
+}
+
+function pulseXRObject(obj) {
+    if (!obj) return;
+    const oldScale = obj.scale.clone();
+    obj.scale.multiplyScalar(1.08);
+    setTimeout(() => {
+        if (obj) obj.scale.copy(oldScale);
+    }, 120);
+}
+
+function updateXRControllerHover() {
+    if (!renderer || !renderer.xr || !renderer.xr.isPresenting) return;
+
+    const hits = [
+        ...getXRControllerIntersections(xrController1),
+        ...getXRControllerIntersections(xrController2)
+    ];
+
+    for (const obj of xrControlTargets) {
+        if (obj && obj.material && obj.userData && obj.userData.originalEmissive !== undefined) {
+            obj.material.emissive.setHex(obj.userData.originalEmissive);
+        }
+    }
+
+    if (hits.length) {
+        const obj = findXRClickableObject(hits[0].object);
+        if (obj && obj.material && obj.material.emissive) {
+            if (obj.userData.originalEmissive === undefined) {
+                obj.userData.originalEmissive = obj.material.emissive.getHex();
+            }
+            obj.material.emissive.setHex(0x334155);
+        }
+    }
+}
+
+
+function createRoom(roomSize, roomHeight) {
+    roomGroup = new THREE.Group();
+    roomGroup.name = 'ROOM_ENCLOSURE_SMALL_TRAINING_SPACE';
+
+    const yFloor = SKELETON_LOCAL_Y_OFFSET;
+    const zCenter = SKELETON_LOCAL_Z_OFFSET;
+    const half = roomSize / 2;
+    const wallY = yFloor + roomHeight / 2;
+
+    const wallMat = new THREE.MeshStandardMaterial({
+        color: 0x111827,
+        roughness: 0.9,
+        metalness: 0.0,
+        transparent: true,
+        opacity: 0.34,
+        side: THREE.DoubleSide,
+        depthWrite: false
+    });
+
+    const backWall = new THREE.Mesh(new THREE.PlaneGeometry(roomSize, roomHeight), wallMat.clone());
+    backWall.position.set(0, wallY, zCenter + half);
+    backWall.rotation.y = Math.PI;
+    roomGroup.add(backWall);
+    roomPlacementSurfaces.push(backWall);
+
+    const leftWall = new THREE.Mesh(new THREE.PlaneGeometry(roomSize, roomHeight), wallMat.clone());
+    leftWall.position.set(-half, wallY, zCenter);
+    leftWall.rotation.y = Math.PI / 2;
+    roomGroup.add(leftWall);
+    roomPlacementSurfaces.push(leftWall);
+
+    const rightWall = new THREE.Mesh(new THREE.PlaneGeometry(roomSize, roomHeight), wallMat.clone());
+    rightWall.position.set(half, wallY, zCenter);
+    rightWall.rotation.y = -Math.PI / 2;
+    roomGroup.add(rightWall);
+    roomPlacementSurfaces.push(rightWall);
+
+    // Low front side walls keep the feeling of a room but leave the viewer side open.
+    const frontLeft = new THREE.Mesh(new THREE.PlaneGeometry(roomSize * 0.32, roomHeight * 0.55), wallMat.clone());
+    frontLeft.position.set(-roomSize * 0.34, yFloor + roomHeight * 0.275, zCenter - half);
+    roomGroup.add(frontLeft);
+
+    const frontRight = new THREE.Mesh(new THREE.PlaneGeometry(roomSize * 0.32, roomHeight * 0.55), wallMat.clone());
+    frontRight.position.set(roomSize * 0.34, yFloor + roomHeight * 0.275, zCenter - half);
+    roomGroup.add(frontRight);
+
+    const roomRoof = new THREE.Mesh(new THREE.PlaneGeometry(roomSize, roomSize), wallMat.clone());
+    roomRoof.name = 'ROOM_ROOF_CLOSED';
+    roomRoof.rotation.x = Math.PI / 2;
+    roomRoof.position.set(0, yFloor + roomHeight, zCenter);
+    roomGroup.add(roomRoof);
+    roomPlacementSurfaces.push(roomRoof);
+
+    const frontWall = new THREE.Mesh(new THREE.PlaneGeometry(roomSize, roomHeight), wallMat.clone());
+    frontWall.name = 'ROOM_FRONT_WALL_CLOSED';
+    frontWall.position.set(0, wallY, zCenter - half);
+    roomGroup.add(frontWall);
+    roomPlacementSurfaces.push(frontWall);
+
+    const edgeMat = new THREE.LineBasicMaterial({ color: 0x64748b, transparent: true, opacity: 0.55 });
+    const box = new THREE.Box3(
+        new THREE.Vector3(-half, yFloor, zCenter - half),
+        new THREE.Vector3(half, yFloor + roomHeight, zCenter + half)
+    );
+    const corners = [
+        new THREE.Vector3(box.min.x, box.min.y, box.min.z), new THREE.Vector3(box.max.x, box.min.y, box.min.z),
+        new THREE.Vector3(box.max.x, box.min.y, box.max.z), new THREE.Vector3(box.min.x, box.min.y, box.max.z),
+        new THREE.Vector3(box.min.x, box.max.y, box.min.z), new THREE.Vector3(box.max.x, box.max.y, box.min.z),
+        new THREE.Vector3(box.max.x, box.max.y, box.max.z), new THREE.Vector3(box.min.x, box.max.y, box.max.z)
+    ];
+    const edgePairs = [[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],[0,4],[1,5],[2,6],[3,7]];
+    for (const [a,b] of edgePairs) {
+        const geo = new THREE.BufferGeometry().setFromPoints([corners[a], corners[b]]);
+        roomGroup.add(new THREE.Line(geo, edgeMat));
+    }
+
+    addToFloorCoordinateAnchor(roomGroup);
+
+    // Wall-mounted analysis panels.
+    createWallHeatmapControlPanel(roomSize, roomHeight);
+    createRightWallDTWDashboard(roomSize, roomHeight);
+    applyWallPanelVisibility();
+}
+
+
+// ============================================================
+// 3D WALL HEATMAP CONTROL PANEL
+// ============================================================
+function createPanelCanvasTexture(width, height, drawFn) {
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext('2d');
+    drawFn(ctx, canvas.width, canvas.height);
+    const texture = new THREE.CanvasTexture(canvas);
+    // Important for wall UI: treat canvas colors as UI colors, not light-reactive scene colors.
+    texture.colorSpace = THREE.SRGBColorSpace;
+    texture.minFilter = THREE.LinearFilter;
+    texture.magFilter = THREE.LinearFilter;
+    texture.generateMipmaps = false;
+    texture.anisotropy = renderer ? Math.min(8, renderer.capabilities.getMaxAnisotropy()) : 1;
+    texture.needsUpdate = true;
+    return texture;
+}
+
+function makeWallPlane(width, height, texture, localX, localY, localZ, name) {
+    const geo = new THREE.PlaneGeometry(width, height);
+    const mat = new THREE.MeshBasicMaterial({
+        map: texture,
+        // Keep the wall UI fully opaque and unlit. Transparent blending with the room wall
+        // caused the buttons/graph to look dull when the camera angle changed.
+        transparent: false,
+        opacity: 1.0,
+        side: THREE.FrontSide,
+        // IMPORTANT: real 3D wall object, not a HUD overlay.
+        // depthTest + depthWrite keep it behind skeletons instead of drawing over them.
+        depthTest: true,
+        depthWrite: true,
+        toneMapped: false,
+        fog: false,
+        polygonOffset: true,
+        polygonOffsetFactor: -1,
+        polygonOffsetUnits: -1
+    });
+    const mesh = new THREE.Mesh(geo, mat);
+    mesh.name = name;
+    mesh.position.set(localX, localY, localZ);
+
+    // The panel sits on the BACK wall. A PlaneGeometry texture is readable
+    // from its +Z/front side by default, but the user stands inside the room
+    // looking toward the back wall from -Z. Rotate every wall UI plane 180°
+    // around its own Y axis so the readable/front texture faces into the room.
+    // This keeps local button positions unchanged: left stays left, right stays right.
+    mesh.rotation.y = Math.PI;
+
+    // Do NOT force high renderOrder. A high renderOrder makes the panel act like
+    // a screen overlay and can draw it over the skeleton. Let the depth buffer
+    // decide visibility naturally.
+    mesh.renderOrder = 0;
+    wallHeatmapPanel.add(mesh);
+    return mesh;
+}
+
+function createWallButton(label, action, value, x, y, w=0.42, h=0.16) {
+    const tex = createPanelCanvasTexture(512, 192, (ctx, cw, ch) => {
+        const active = (action === 'metric' && metric === value) || (action === 'stat' && statMode === value);
+        ctx.clearRect(0, 0, cw, ch);
+        ctx.fillStyle = active ? '#2563eb' : '#334155';
+        roundRectPath(ctx, 24, 24, cw - 48, ch - 48, 34);
+        ctx.fill();
+        ctx.strokeStyle = active ? '#bfdbfe' : '#64748b';
+        ctx.lineWidth = 8;
+        roundRectPath(ctx, 28, 28, cw - 56, ch - 56, 30);
+        ctx.stroke();
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 54px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(label, cw/2, ch/2 + 3);
+    });
+    const mesh = makeWallPlane(w, h, tex, x, y, -0.010, 'wall_button_' + action + '_' + value);
+    mesh.userData.wallAction = action;
+    mesh.userData.wallValue = value;
+    wallControlObjects.push(mesh);
+    return mesh;
+}
+
+function createWallHeatmapControlPanel(roomSize, roomHeight) {
+    wallHeatmapPanel = new THREE.Group();
+    wallHeatmapPanel.name = 'WALL_HEATMAP_CONTROLS_AND_ERROR_GRAPH';
+
+    const yFloor = SKELETON_LOCAL_Y_OFFSET;
+    const zCenter = SKELETON_LOCAL_Z_OFFSET;
+    const half = roomSize / 2;
+
+    // Put the panel on the back wall, behind the skeletons, facing the user/camera.
+    // Keep the UI clearly in front of the back wall, but still behind the skeletons.
+    // This avoids wall z-fighting without forcing it to render over the skeletons.
+    // Put the panel higher on the back wall so it does not cover the skeletons.
+    // It remains a real 3D wall object, so skeletons/room geometry can occlude it.
+    wallHeatmapPanel.position.set(0, yFloor + roomHeight * HEATMAP_PANEL_HEIGHT_RATIO, zCenter + half - 0.08);
+    // Bigger room = bigger back wall, so scale the whole wall heatmap UI up.
+    wallHeatmapPanel.scale.set(HEATMAP_PANEL_SCALE, HEATMAP_PANEL_SCALE, 1.0);
+    addToFloorCoordinateAnchor(wallHeatmapPanel);
+
+    const bgTex = createPanelCanvasTexture(1400, 760, (ctx, w, h) => {
+        ctx.clearRect(0, 0, w, h);
+        ctx.fillStyle = '#020617';
+        roundRectPath(ctx, 20, 20, w - 40, h - 40, 42);
+        ctx.fill();
+        ctx.strokeStyle = '#64748b';
+        ctx.lineWidth = 6;
+        roundRectPath(ctx, 24, 24, w - 48, h - 48, 38);
+        ctx.stroke();
+        ctx.fillStyle = '#e5e7eb';
+        ctx.font = 'bold 54px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('Heatmap Controls', w/2, 82);
+        ctx.fillStyle = '#cbd5e1';
+        ctx.font = '30px Arial';
+        ctx.textAlign = 'left';
+        ctx.fillText('Metric', 90, 160);
+        ctx.fillText('Statistic', 90, 292);
+        ctx.fillText('Heatmap scale', 90, 390);
+        ctx.fillText('Phase error graph', 90, 485);
+
+        // Keep the low-to-high heatmap indicator below the statistic buttons.
+        // It was previously drawn on the same horizontal band as the metric buttons,
+        // so it visually overlapped them on the wall panel.
+        const grd = ctx.createLinearGradient(360, 372, 760, 372);
+        grd.addColorStop(0, '#ffe10d');
+        grd.addColorStop(1, '#e60000');
+        ctx.fillStyle = grd;
+        roundRectPath(ctx, 360, 354, 600, 36, 18);
+        ctx.fill();
+        ctx.strokeStyle = '#e5e7eb';
+        ctx.lineWidth = 3;
+        roundRectPath(ctx, 360, 354, 600, 36, 18);
+        ctx.stroke();
+        ctx.fillStyle = '#cbd5e1';
+        ctx.font = '24px Arial';
+        ctx.fillText('low', 1000, 383);
+        ctx.fillText(' - ', 1060, 383);
+        ctx.fillText('high', 1100, 383);
+    });
+    makeWallPlane(4.35, 2.35, bgTex, 0, 0, 0.000, 'wall_heatmap_panel_background');
+
+    createWallButton('Pos',   'metric', 'position', -0.95, 0.58, 0.50, 0.18);
+    createWallButton('Vel',   'metric', 'velocity', -0.30, 0.58, 0.50, 0.18);
+    createWallButton('Flux',  'metric', 'flux',      0.35, 0.58, 0.50, 0.18);
+    createWallButton('Angle', 'metric', 'angle',     1.05, 0.58, 0.60, 0.18);
+
+    createWallButton('Max', 'stat', 'max', -0.72, 0.18, 0.52, 0.18);
+    createWallButton('Mean', 'stat', 'mean', -0.04, 0.18, 0.58, 0.18);
+    createWallButton('Std', 'stat', 'std', 0.66, 0.18, 0.50, 0.18);
+
+    const graphTex = createWallGraphTexture(0, 0);
+    wallGraphMesh = makeWallPlane(3.70, 0.82, graphTex, 0, -0.75, -0.014, 'wall_error_graph_live');
+
+    const infoTex = createWallInfoTexture('Metric: angle | Stat: max | Phase: P0');
+    wallPanelInfoMesh = makeWallPlane(3.70, 0.20, infoTex, 0, -1.12, -0.018, 'wall_panel_info');
+}
+
+function createWallInfoTexture(text) {
+    return createPanelCanvasTexture(1200, 120, (ctx, w, h) => {
+        ctx.clearRect(0, 0, w, h);
+        ctx.fillStyle = '#0f172a';
+        roundRectPath(ctx, 12, 12, w - 24, h - 24, 22);
+        ctx.fill();
+        ctx.fillStyle = '#e5e7eb';
+        ctx.font = 'bold 38px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(text, w/2, h/2 + 2);
+    });
+}
+
+function createWallGraphTexture(phaseId, percent) {
+    return createPanelCanvasTexture(1200, 360, (ctx, w, h) => {
+        ctx.clearRect(0, 0, w, h);
+        ctx.fillStyle = '#020617';
+        roundRectPath(ctx, 8, 8, w - 16, h - 16, 24);
+        ctx.fill();
+        ctx.strokeStyle = '#334155';
+        ctx.lineWidth = 4;
+        roundRectPath(ctx, 12, 12, w - 24, h - 24, 22);
+        ctx.stroke();
+
+        const curve = DATA && DATA.curves ? DATA.curves[String(phaseId)] : null;
+        if (!curve) {
+            ctx.fillStyle = '#cbd5e1';
+            ctx.font = '34px Arial';
+            ctx.fillText('No phase_time_metric_curves.csv data', 44, 80);
+            return;
+        }
+
+        const marginL = 56, marginR = 36, marginT = 44, marginB = 48;
+        const plotW = w - marginL - marginR;
+        const plotH = h - marginT - marginB;
+        let series = [];
+        for (const g of DATA.group_order) series.push([g, curve.group_curves[metric][g]]);
+        let all = [];
+        for (const s of series) all = all.concat(s[1] || []);
+        const maxV = Math.max(...all.map(Number), 1e-9);
+
+        ctx.strokeStyle = '#475569';
+        ctx.lineWidth = 2;
+        for (let k=0; k<=4; k++) {
+            const y = marginT + (k/4) * plotH;
+            ctx.beginPath(); ctx.moveTo(marginL, y); ctx.lineTo(marginL + plotW, y); ctx.stroke();
+        }
+        ctx.strokeStyle = '#94a3b8';
+        ctx.lineWidth = 3;
+        ctx.strokeRect(marginL, marginT, plotW, plotH);
+
+        const colors = ['#38bdf8','#fb7185','#facc15','#4ade80','#c084fc','#fb923c'];
+        series.forEach((s, idx) => {
+            const vals = s[1] || [];
+            if (!vals.length) return;
+            ctx.strokeStyle = colors[idx % colors.length];
+            ctx.lineWidth = 5;
+            ctx.beginPath();
+            for (let i=0; i<vals.length; i++) {
+                const x = marginL + (i / Math.max(vals.length-1, 1)) * plotW;
+                const y = marginT + plotH - (Number(vals[i]) / maxV) * plotH;
+                if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+            ctx.fillStyle = colors[idx % colors.length];
+            ctx.font = 'bold 26px Arial';
+            ctx.fillText(s[0], marginL + 18 + idx * 165, 30);
+        });
+
+        const xCur = marginL + (Number(percent || 0) / 100) * plotW;
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.moveTo(xCur, marginT); ctx.lineTo(xCur, marginT + plotH); ctx.stroke();
+
+        ctx.fillStyle = '#cbd5e1';
+        ctx.font = '24px Arial';
+        ctx.fillText('phase time (%)', w - 220, h - 15);
+    });
+}
+
+function refreshWallHeatmapPanel(phaseId, percent) {
+    if (!wallHeatmapPanel) return;
+
+    // Rebuild button textures so the selected metric/stat is highlighted.
+    for (const obj of wallControlObjects) {
+        const label = obj.userData.wallValue === 'position' ? 'Pos' :
+                      obj.userData.wallValue === 'velocity' ? 'Vel' :
+                      obj.userData.wallValue === 'flux' ? 'Flux' :
+                      obj.userData.wallValue === 'angle' ? 'Angle' :
+                      obj.userData.wallValue === 'max' ? 'Max' :
+                      obj.userData.wallValue === 'mean' ? 'Mean' : 'Std';
+        const active = (obj.userData.wallAction === 'metric' && metric === obj.userData.wallValue) ||
+                       (obj.userData.wallAction === 'stat' && statMode === obj.userData.wallValue);
+        if (obj.material.map) obj.material.map.dispose();
+        obj.material.map = createPanelCanvasTexture(512, 192, (ctx, cw, ch) => {
+            ctx.clearRect(0, 0, cw, ch);
+            ctx.fillStyle = active ? '#2563eb' : '#334155';
+            roundRectPath(ctx, 24, 24, cw - 48, ch - 48, 34);
+            ctx.fill();
+            ctx.strokeStyle = active ? '#bfdbfe' : '#64748b';
+            ctx.lineWidth = 8;
+            roundRectPath(ctx, 28, 28, cw - 56, ch - 56, 30);
+            ctx.stroke();
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 54px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(label, cw/2, ch/2 + 3);
+        });
+        obj.material.needsUpdate = true;
+    }
+
+    if (wallGraphMesh) {
+        if (wallGraphMesh.material.map) wallGraphMesh.material.map.dispose();
+        wallGraphMesh.material.map = createWallGraphTexture(phaseId, percent);
+        wallGraphMesh.material.needsUpdate = true;
+    }
+    if (wallPanelInfoMesh) {
+        if (wallPanelInfoMesh.material.map) wallPanelInfoMesh.material.map.dispose();
+        wallPanelInfoMesh.material.map = createWallInfoTexture(`Metric: ${metric} | Stat: ${statMode} | Phase: P${phaseId}`);
+        wallPanelInfoMesh.material.needsUpdate = true;
+    }
+}
+
+
+// ============================================================
+// RIGHT WALL DTW DASHBOARD
+// ============================================================
+function makeRightWallPlane(width, height, texture, localX, localY, localZ, name) {
+    const geo = new THREE.PlaneGeometry(width, height);
+    const mat = new THREE.MeshBasicMaterial({
+        map: texture,
+        transparent: false,
+        opacity: 1.0,
+        side: THREE.FrontSide,
+        depthTest: true,
+        depthWrite: true,
+        toneMapped: false,
+        fog: false,
+        polygonOffset: true,
+        polygonOffsetFactor: -1,
+        polygonOffsetUnits: -1
+    });
+    const mesh = new THREE.Mesh(geo, mat);
+    mesh.name = name;
+    mesh.position.set(localX, localY, localZ);
+    mesh.renderOrder = 0;
+    rightWallDTWPanel.add(mesh);
+    return mesh;
+}
+
+function createRightWallDTWDashboard(roomSize, roomHeight) {
+    rightWallDTWPanel = new THREE.Group();
+    rightWallDTWPanel.name = 'RIGHT_WALL_DTW_DASHBOARD';
+
+    const yFloor = SKELETON_LOCAL_Y_OFFSET;
+    const zCenter = SKELETON_LOCAL_Z_OFFSET;
+    const half = roomSize / 2;
+
+    // User-facing right wall in this viewer is the negative-X room wall.
+    // Put the dashboard on x = -half and rotate it so the canvas front faces inward.
+    rightWallDTWPanel.position.set(-half + 0.08, yFloor + roomHeight * DTW_PANEL_HEIGHT_RATIO, zCenter + 0.05);
+    rightWallDTWPanel.rotation.y = Math.PI / 2;
+    rightWallDTWPanel.scale.set(DTW_PANEL_SCALE, DTW_PANEL_SCALE, 1.0);
+    addToFloorCoordinateAnchor(rightWallDTWPanel);
+
+    const bgTex = createPanelCanvasTexture(1900, 900, (ctx, w, h) => {
+        ctx.clearRect(0, 0, w, h);
+        ctx.fillStyle = '#020617';
+        roundRectPath(ctx, 20, 20, w - 40, h - 40, 44);
+        ctx.fill();
+        ctx.strokeStyle = '#64748b';
+        ctx.lineWidth = 6;
+        roundRectPath(ctx, 24, 24, w - 48, h - 48, 40);
+        ctx.stroke();
+        ctx.fillStyle = '#e5e7eb';
+        ctx.font = 'bold 58px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('DTW Alignment', w / 2, 84);
+        // Removed extra subtitles to keep the larger DTW dashboard clean in VR.
+    });
+    makeRightWallPlane(5.45, 2.72, bgTex, 0, 0, 0.000, 'right_wall_dtw_dashboard_background');
+
+    // Small complete/full DTW path on the left.
+    rightWallDTWOverviewMesh = makeRightWallPlane(
+        1.22, 1.28,
+        createDTWOverviewTexture(null),
+        -1.42, -0.02, 0.030,
+        'right_wall_dtw_full_overview'
+    );
+
+    // Bigger current-phase DTW path on the right.
+    rightWallDTWPhaseMesh = makeRightWallPlane(
+        2.72, 1.28,
+        createDTWPhaseTexture(null, null),
+        0.48, -0.02, 0.034,
+        'right_wall_dtw_current_phase_graph'
+    );
+
+    rightWallDTWInfoMesh = makeRightWallPlane(
+        4.18, 0.42,
+        createDTWInfoTexture(null, null),
+        -0.16, -0.97, 0.038,
+        'right_wall_dtw_alignment_frames_info'
+    );
+}
+
+function normalizeDTWPair(rawPair, refIndexFallback=null) {
+    if (Array.isArray(rawPair)) {
+        const r = Number(rawPair[0]);
+        const l = Number(rawPair[1]);
+        if (Number.isFinite(r) && Number.isFinite(l)) return [r, l];
+    }
+    if (rawPair && typeof rawPair === 'object') {
+        const refKeys = ['reference_index', 'ref_index', 'reference_idx', 'ref_idx', 'reference_i', 'ref_i', 'i'];
+        const learnerKeys = ['learner_index', 'learn_index', 'learner_idx', 'learn_idx', 'learner_i', 'learn_i', 'j'];
+        let r = NaN, l = NaN;
+        for (const key of refKeys) {
+            if (rawPair[key] !== undefined && rawPair[key] !== null && rawPair[key] !== '') { r = Number(rawPair[key]); break; }
+        }
+        for (const key of learnerKeys) {
+            if (rawPair[key] !== undefined && rawPair[key] !== null && rawPair[key] !== '') { l = Number(rawPair[key]); break; }
+        }
+        if (Number.isFinite(r) && Number.isFinite(l)) return [r, l];
+    }
+    if (refIndexFallback !== null && Number.isFinite(Number(rawPair))) {
+        return [Number(refIndexFallback), Number(rawPair)];
+    }
+    return null;
+}
+
+function getAllDTWPairs() {
+    let pairs = [];
+
+    if (DATA && Array.isArray(DATA.dtw_path) && DATA.dtw_path.length > 0) {
+        pairs = DATA.dtw_path
+            .map(p => normalizeDTWPair(p))
+            .filter(p => p && Number.isFinite(p[0]) && Number.isFinite(p[1]));
+    }
+
+    // Fallback: if dtw_alignment_path.csv is missing or parsed incorrectly, use the
+    // already-built reference-to-learner mapping. This guarantees a visible DTW path.
+    if ((!pairs.length || pairs.every(p => p[0] === 0 && p[1] === 0)) && DATA && Array.isArray(DATA.ref_to_learner)) {
+        pairs = DATA.ref_to_learner
+            .map((learnerIndex, referenceIndex) => normalizeDTWPair(learnerIndex, referenceIndex))
+            .filter(p => p && Number.isFinite(p[0]) && Number.isFinite(p[1]));
+    }
+
+    // Sort for a clean continuous line.
+    pairs.sort((a, b) => (a[0] - b[0]) || (a[1] - b[1]));
+    return pairs;
+}
+
+function getDTWPairsForPhase(phase) {
+    if (!DATA || !phase) return [];
+    const start = Number(phase.start_index || 0);
+    const end = Number(phase.end_index || start);
+    return getAllDTWPairs()
+        .filter(p => p[0] >= start && p[0] <= end && Number.isFinite(p[0]) && Number.isFinite(p[1]));
+}
+
+function drawDTWAxes(ctx, x, y, w, h, xLabel, yLabel) {
+    ctx.strokeStyle = '#475569';
+    ctx.lineWidth = 2;
+    for (let k = 0; k <= 4; k++) {
+        const gx = x + (k / 4) * w;
+        const gy = y + (k / 4) * h;
+        ctx.beginPath(); ctx.moveTo(gx, y); ctx.lineTo(gx, y + h); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(x, gy); ctx.lineTo(x + w, gy); ctx.stroke();
+    }
+    ctx.strokeStyle = '#94a3b8';
+    ctx.lineWidth = 4;
+    ctx.strokeRect(x, y, w, h);
+    ctx.fillStyle = '#cbd5e1';
+    ctx.font = '24px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText(xLabel, x + w / 2, y + h + 44);
+    ctx.save();
+    ctx.translate(x - 42, y + h / 2);
+    ctx.rotate(-Math.PI / 2);
+    ctx.fillText(yLabel, 0, 0);
+    ctx.restore();
+}
+
+function drawDTWPath(ctx, pairs, x, y, w, h, minRef, maxRef, minLearner, maxLearner, color, lineWidth) {
+    if (!pairs || pairs.length === 0) return;
+    const refSpan = Math.max(maxRef - minRef, 1e-9);
+    const learnerSpan = Math.max(maxLearner - minLearner, 1e-9);
+    ctx.strokeStyle = color;
+    ctx.lineWidth = lineWidth;
+    ctx.beginPath();
+    for (let i = 0; i < pairs.length; i++) {
+        const px = x + ((pairs[i][0] - minRef) / refSpan) * w;
+        const py = y + h - ((pairs[i][1] - minLearner) / learnerSpan) * h;
+        if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+    }
+    ctx.stroke();
+}
+
+function createDTWOverviewTexture(meta) {
+    return createPanelCanvasTexture(720, 760, (ctx, w, h) => {
+        ctx.clearRect(0, 0, w, h);
+        ctx.fillStyle = '#020617';
+        roundRectPath(ctx, 10, 10, w - 20, h - 20, 28);
+        ctx.fill();
+        ctx.strokeStyle = '#334155';
+        ctx.lineWidth = 4;
+        roundRectPath(ctx, 14, 14, w - 28, h - 28, 24);
+        ctx.stroke();
+        ctx.fillStyle = '#e5e7eb';
+        ctx.font = 'bold 34px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('Complete DTW path', w / 2, 55);
+
+        const pairs = getAllDTWPairs();
+        const plotX = 86, plotY = 100, plotW = w - 140, plotH = h - 205;
+        drawDTWAxes(ctx, plotX, plotY, plotW, plotH, 'reference', 'learner');
+        if (!pairs.length) {
+            ctx.fillStyle = '#cbd5e1';
+            ctx.font = '28px Arial';
+            ctx.fillText('No dtw_alignment_path.csv', w/2, h/2);
+            return;
+        }
+        const maxRef = Math.max(...pairs.map(p => p[0]), DATA.metadata.num_reference_frames - 1);
+        const maxLearner = Math.max(...pairs.map(p => p[1]), DATA.metadata.num_learner_frames - 1);
+        drawDTWPath(ctx, pairs, plotX, plotY, plotW, plotH, 0, maxRef, 0, maxLearner, '#38bdf8', 5);
+
+        if (meta) {
+            const phase = phaseForFrame(Number(meta.reference_index));
+            const phasePairs = getDTWPairsForPhase(phase);
+            drawDTWPath(ctx, phasePairs, plotX, plotY, plotW, plotH, 0, maxRef, 0, maxLearner, '#facc15', 8);
+            const px = plotX + (Number(meta.reference_index) / Math.max(maxRef, 1)) * plotW;
+            const py = plotY + plotH - (Number(meta.learner_index) / Math.max(maxLearner, 1)) * plotH;
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath(); ctx.arc(px, py, 11, 0, Math.PI * 2); ctx.fill();
+            ctx.strokeStyle = '#ef4444'; ctx.lineWidth = 5; ctx.stroke();
+        }
+
+        ctx.fillStyle = '#cbd5e1';
+        ctx.font = '24px Arial';
+        ctx.textAlign = 'left';
+        ctx.fillText('Blue: full alignment', 70, h - 74);
+        ctx.fillStyle = '#facc15';
+        ctx.fillText('Yellow: current phase', 70, h - 38);
+    });
+}
+
+function createDTWPhaseTexture(meta, phase) {
+    return createPanelCanvasTexture(1300, 760, (ctx, w, h) => {
+        ctx.clearRect(0, 0, w, h);
+        ctx.fillStyle = '#020617';
+        roundRectPath(ctx, 10, 10, w - 20, h - 20, 28);
+        ctx.fill();
+        ctx.strokeStyle = '#334155';
+        ctx.lineWidth = 4;
+        roundRectPath(ctx, 14, 14, w - 28, h - 28, 24);
+        ctx.stroke();
+
+        if (!phase) phase = DATA && DATA.phases ? DATA.phases[0] : null;
+        const phaseId = phase ? Number(phase.phase_id) : 0;
+        ctx.fillStyle = '#e5e7eb';
+        ctx.font = 'bold 36px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText(`Current phase DTW path: P${phaseId}`, w / 2, 55);
+
+        const pairs = getDTWPairsForPhase(phase);
+        const plotX = 95, plotY = 105, plotW = w - 175, plotH = h - 250;
+        drawDTWAxes(ctx, plotX, plotY, plotW, plotH, 'reference index in phase', 'learner index');
+
+        if (!pairs.length || !phase) {
+            ctx.fillStyle = '#cbd5e1';
+            ctx.font = '30px Arial';
+            ctx.fillText('No DTW pairs for current phase', w/2, h/2);
+            return;
+        }
+
+        const minRef = Math.min(...pairs.map(p => p[0]));
+        const maxRef = Math.max(...pairs.map(p => p[0]));
+        const minLearner = Math.min(...pairs.map(p => p[1]));
+        const maxLearner = Math.max(...pairs.map(p => p[1]));
+        drawDTWPath(ctx, pairs, plotX, plotY, plotW, plotH, minRef, maxRef, minLearner, maxLearner, '#22c55e', 7);
+
+        if (meta) {
+            const refSpan = Math.max(maxRef - minRef, 1e-9);
+            const learnerSpan = Math.max(maxLearner - minLearner, 1e-9);
+            const px = plotX + ((Number(meta.reference_index) - minRef) / refSpan) * plotW;
+            const py = plotY + plotH - ((Number(meta.learner_index) - minLearner) / learnerSpan) * plotH;
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 4;
+            ctx.beginPath(); ctx.moveTo(px, plotY); ctx.lineTo(px, plotY + plotH); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(plotX, py); ctx.lineTo(plotX + plotW, py); ctx.stroke();
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath(); ctx.arc(px, py, 13, 0, Math.PI * 2); ctx.fill();
+            ctx.strokeStyle = '#ef4444'; ctx.lineWidth = 6; ctx.stroke();
+        }
+
+        const speed = getPhaseSpeedStatus(phase);
+        drawSpeedIndicator(ctx, w - 425, h - 142, 350, 112, speed);
+
+        ctx.fillStyle = '#cbd5e1';
+        ctx.font = '27px Arial';
+        ctx.textAlign = 'left';
+        ctx.fillText(`Ref phase index: ${phase.start_index}–${phase.end_index}`, 92, h - 94);
+        const comparison = comparisonForPhase(phaseId);
+        const lStart = comparison.learner_start_index ?? '-';
+        const lEnd = comparison.learner_end_index ?? '-';
+        ctx.fillText(`Learner aligned index: ${lStart}–${lEnd}`, 92, h - 54);
+    });
+}
+
+
+function getPhaseSpeedStatus(metaOrPhase) {
+    if (!DATA) return { ratio: 1.0, label: 'Speed unknown', detail: 'No comparison data', color: '#526174', direction: 0 };
+    let phaseId = null;
+    if (metaOrPhase && metaOrPhase.phase_id !== undefined) phaseId = Number(metaOrPhase.phase_id);
+    else if (metaOrPhase && metaOrPhase.phase_id !== undefined) phaseId = Number(metaOrPhase.phase_id);
+    const comparison = comparisonForPhase(phaseId);
+    let ratio = Number(comparison.duration_ratio);
+
+    // duration_ratio is expected as learner_duration / reference_duration.
+    // If unavailable, estimate it from phase index ranges.
+    if (!Number.isFinite(ratio) || ratio <= 0) {
+        const refStart = Number(comparison.reference_start_index ?? (metaOrPhase ? metaOrPhase.start_index : NaN));
+        const refEnd = Number(comparison.reference_end_index ?? (metaOrPhase ? metaOrPhase.end_index : NaN));
+        const learnerStart = Number(comparison.learner_start_index);
+        const learnerEnd = Number(comparison.learner_end_index);
+        const refDur = Math.max(refEnd - refStart + 1, 1);
+        const learnerDur = Math.max(learnerEnd - learnerStart + 1, 1);
+        if (Number.isFinite(refDur) && Number.isFinite(learnerDur)) ratio = learnerDur / refDur;
+    }
+
+    if (!Number.isFinite(ratio) || ratio <= 0) {
+        return { ratio: 1.0, label: 'Speed unknown', detail: 'Duration ratio unavailable', color: '#526174', direction: 0 };
+    }
+    if (ratio < 0.95) {
+        return { ratio, label: 'Learner faster', detail: `Learner phase is ${(1/ratio).toFixed(2)}× faster`, color: '#38bdf8', direction: -1 };
+    }
+    if (ratio > 1.05) {
+        return { ratio, label: 'Learner slower', detail: `Learner phase is ${ratio.toFixed(2)}× longer`, color: '#f97316', direction: 1 };
+    }
+    return { ratio, label: 'Similar speed', detail: `Duration ratio ${ratio.toFixed(2)}×`, color: '#22c55e', direction: 0 };
+}
+
+function drawSpeedIndicator(ctx, x, y, w, h, speed) {
+    ctx.fillStyle = '#eff6ff';
+    roundRectPath(ctx, x, y, w, h, 20);
+    ctx.fill();
+    ctx.strokeStyle = speed.color;
+    ctx.lineWidth = 4;
+    roundRectPath(ctx, x + 2, y + 2, w - 4, h - 4, 18);
+    ctx.stroke();
+
+    ctx.fillStyle = '#172033';
+    ctx.font = 'bold 28px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText(speed.label, x + w / 2, y + 36);
+    ctx.fillStyle = '#526174';
+    ctx.font = '22px Arial';
+    ctx.fillText(speed.detail, x + w / 2, y + 68);
+
+    const cy = y + h - 36;
+    const centerX = x + w / 2;
+    ctx.strokeStyle = '#94a3b8';
+    ctx.lineWidth = 8;
+    ctx.beginPath(); ctx.moveTo(x + 42, cy); ctx.lineTo(x + w - 42, cy); ctx.stroke();
+    ctx.fillStyle = '#94a3b8';
+    ctx.font = '18px Arial';
+    ctx.fillText('faster', x + 72, cy + 30);
+    ctx.fillText('same', centerX, cy + 30);
+    ctx.fillText('slower', x + w - 72, cy + 30);
+
+    let markerX = centerX;
+    if (speed.direction < 0) markerX = x + 80;
+    if (speed.direction > 0) markerX = x + w - 80;
+    ctx.fillStyle = speed.color;
+    ctx.beginPath(); ctx.arc(markerX, cy, 16, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = '#2563eb'; ctx.lineWidth = 4; ctx.stroke();
+}
+
+function createDTWInfoTexture(meta, phase) {
+    return createPanelCanvasTexture(1600, 250, (ctx, w, h) => {
+        ctx.clearRect(0, 0, w, h);
+        ctx.fillStyle = '#0f172a';
+        roundRectPath(ctx, 12, 12, w - 24, h - 24, 28);
+        ctx.fill();
+        ctx.strokeStyle = '#64748b';
+        ctx.lineWidth = 4;
+        roundRectPath(ctx, 16, 16, w - 32, h - 32, 24);
+        ctx.stroke();
+        ctx.fillStyle = '#e5e7eb';
+        ctx.font = 'bold 40px Arial';
+        ctx.textAlign = 'center';
+        if (!meta || !phase) {
+            ctx.fillText('DTW alignment frames will update with the current phase', w/2, h/2);
+            return;
+        }
+        const comparison = comparisonForPhase(meta.phase_id);
+        ctx.fillText(`P${meta.phase_id}: current DTW match`, w/2, 58);
+        ctx.font = '34px Arial';
+        ctx.fillText(`Reference index/frame: ${meta.reference_index}  →  Learner index/frame: ${meta.learner_index} `, w/2, 120);
+        ctx.fillStyle = '#cbd5e1';
+        ctx.font = '30px Arial';
+        ctx.fillText(`Phase frames: ref ${phase.start_frame}–${phase.end_frame} | learner ${comparison.learner_start_frame ?? '-'}–${comparison.learner_end_frame ?? '-'}`, w/2, 168);
+        const speed = getPhaseSpeedStatus(meta);
+        ctx.fillStyle = speed.color;
+        ctx.font = 'bold 30px Arial';
+        ctx.fillText(`${speed.label}: ${speed.detail}`, w/2, 212);
+    });
+}
+
+function refreshRightWallDTWPanel(meta, phase) {
+    if (!rightWallDTWPanel) return;
+    if (rightWallDTWOverviewMesh) {
+        if (rightWallDTWOverviewMesh.material.map) rightWallDTWOverviewMesh.material.map.dispose();
+        rightWallDTWOverviewMesh.material.map = createDTWOverviewTexture(meta);
+        rightWallDTWOverviewMesh.material.needsUpdate = true;
+    }
+    if (rightWallDTWPhaseMesh) {
+        if (rightWallDTWPhaseMesh.material.map) rightWallDTWPhaseMesh.material.map.dispose();
+        rightWallDTWPhaseMesh.material.map = createDTWPhaseTexture(meta, phase);
+        rightWallDTWPhaseMesh.material.needsUpdate = true;
+    }
+    if (rightWallDTWInfoMesh) {
+        if (rightWallDTWInfoMesh.material.map) rightWallDTWInfoMesh.material.map.dispose();
+        rightWallDTWInfoMesh.material.map = createDTWInfoTexture(meta, phase);
+        rightWallDTWInfoMesh.material.needsUpdate = true;
+    }
+}
+
+
+// ============================================================
+// WEBPAGE-ONLY LIVE ANALYSIS PANELS
+// These canvases are ordinary HTML and never enter the WebXR scene.
+// ============================================================
+function copyTextureToWebCanvas(texture, canvasId) {
+    const canvas = $(canvasId);
+    if (!canvas || !texture || !texture.image) return;
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(texture.image, 0, 0, canvas.width, canvas.height);
+    texture.dispose();
+}
+
+function refreshWebAnalysisPanels(meta, phase) {
+    if (!meta || !phase) return;
+    copyTextureToWebCanvas(createWallGraphTexture(meta.phase_id, meta.phase_progress), 'webErrorGraph');
+    copyTextureToWebCanvas(createDTWOverviewTexture(meta), 'webDTWOverview');
+    copyTextureToWebCanvas(createDTWPhaseTexture(meta, phase), 'webDTWPhase');
+    copyTextureToWebCanvas(createDTWInfoTexture(meta, phase), 'webDTWInfo');
+
+    const info = $('webGraphInfo');
+    if (info) info.innerText = `Metric: ${metric} | Statistic: ${statMode} | Phase: P${meta.phase_id}`;
+}
+
+function setupWebAnalysisControls() {
+    const metricSelect = $('webMetricSelect');
+    const sceneMetricSelect = $('sceneMetricSelect');
+    const statSelect = $('webStatSelect');
+    if (sceneMetricSelect) {
+        sceneMetricSelect.value = metric;
+        sceneMetricSelect.addEventListener('change', () => {
+            metric = sceneMetricSelect.value;
+            if ($('metricSelect')) $('metricSelect').value = metric;
+            if ($('webMetricSelect')) $('webMetricSelect').value = metric;
+            refreshViewerSettingsButtons();
+            updateFrame(currentFrame);
+        });
+    }
+    if (metricSelect) {
+        metricSelect.value = metric;
+        metricSelect.addEventListener('change', () => {
+            metric = metricSelect.value;
+            if ($('metricSelect')) $('metricSelect').value = metric;
+            if ($('sceneMetricSelect')) $('sceneMetricSelect').value = metric;
+            refreshViewerSettingsButtons();
+            updateFrame(currentFrame);
+        });
+    }
+    if (statSelect) {
+        statSelect.value = statMode;
+        statSelect.addEventListener('change', () => {
+            statMode = statSelect.value;
+            if ($('statSelect')) $('statSelect').value = statMode;
+            updateFrame(currentFrame);
+        });
+    }
+}
+
+
+// ============================================================
+// CENTER PLAY/PAUSE BUTTON + FLOOR-LINKED INVISIBLE ANCHORS
+// ============================================================
+function setupFloorCoordinateAnchor() {
+    floorCoordinateAnchor = new THREE.Group();
+    floorCoordinateAnchor.name = 'FLOOR_COORDINATE_ANCHOR_PARENT_OF_FLOOR_AND_BUTTON';
+    floorCoordinateAnchor.position.set(0, 0, 0);
+    // Keep the original room/skeleton orientation.
+    // User starts on the front/viewer side and looks toward the skeletons.
+    floorCoordinateAnchor.rotation.set(0, 0, 0);
+    floorCoordinateAnchor.scale.set(1, 1, 1);
+    scene.add(floorCoordinateAnchor);
+}
+
+function setupSkeletonAnchor() {
+    // Invisible movable anchor for skeletons, labels, arrows/trails reference positions.
+    // Move this object to reposition the whole motion inside the room.
+    skeletonAnchor = new THREE.Group();
+    skeletonAnchor.name = 'INVISIBLE_SKELETON_ROOM_ANCHOR_MOVE_THIS_TO_REPOSITION_MOTION';
+    skeletonAnchor.position.copy(PLAY_BUTTON_ANCHOR_POSITION);
+    skeletonAnchor.rotation.copy(PLAY_BUTTON_ANCHOR_ROTATION);
+    skeletonAnchor.scale.setScalar(PLAY_BUTTON_ANCHOR_SCALE);
+    addToFloorCoordinateAnchor(skeletonAnchor);
+
+    // Backward-compatible alias for existing helper names in this file.
+    playButtonAnchor = skeletonAnchor;
+}
+
+function createSkeletonFloorCircle() {
+    // Visual floor markers for the skeleton/motion comparison area.
+    // They are attached to skeletonAnchor and synchronized with the skeleton groups,
+    // so moving a skeleton group also moves its own circle and floor button.
+    if (!skeletonAnchor) return;
+    if (skeletonFloorCircleGroup && skeletonFloorCircleGroup.parent) {
+        skeletonFloorCircleGroup.parent.remove(skeletonFloorCircleGroup);
+    }
+
+    skeletonFloorCircleGroup = new THREE.Group();
+    skeletonFloorCircleGroup.name = 'SKELETON_FLOOR_CIRCLE_MARKERS_ONLY';
+
+    const circleY = SKELETON_LOCAL_Y_OFFSET + 0.3 + 0.012;
+    const circleZ = SKELETON_LOCAL_Z_OFFSET + GHOST_OFFSET.z;
+
+    // Each marker is its own group so its visibility and position can follow its skeleton.
+    referenceFloorMarkerGroup = addSmallFloorMarker(REF_OFFSET.x, circleY, circleZ, 0x38bdf8, 'REFERENCE');
+    ghostLearnerFloorMarkerGroup = addSmallFloorMarker(GHOST_OFFSET.x, circleY, circleZ, 0xffffff, 'GHOST/LEARNER');
+    learnerFloorMarkerGroup = addSmallFloorMarker(LEARNER_OFFSET.x, circleY, circleZ, 0x22c55e, 'LEARNER');
+
+    // Three floor buttons placed next to the corresponding floor circles.
+    // They are real 3D buttons, so they can be selected by mouse raycast and Quest controller raycast.
+    centerReferenceToggleButton = addFloorToggleButton('Ref', REF_OFFSET.x, circleY + 0.08, circleZ - Math.max(0.72, SKELETON_CIRCLE_OUTER_RADIUS * 2.7), 'toggleRef');
+    centerGhostLearnerToggleButton = addFloorToggleButton('Ghost/Learner', GHOST_OFFSET.x, circleY + 0.08, circleZ - Math.max(0.72, SKELETON_CIRCLE_OUTER_RADIUS * 2.7), 'toggleGhostPair');
+    centerLearnerToggleButton = addFloorToggleButton('Learner', LEARNER_OFFSET.x, circleY + 0.08, circleZ - Math.max(0.72, SKELETON_CIRCLE_OUTER_RADIUS * 2.7), 'toggleLearner');
+
+    skeletonAnchor.add(skeletonFloorCircleGroup);
+    syncFloorMarkersWithSkeletons();
+    refreshVisibilityToggleButtons();
+}
+
+function addSmallFloorMarker(x, y, z, colorHex, label) {
+    if (!skeletonFloorCircleGroup) return null;
+
+    const group = new THREE.Group();
+    group.name = 'FLOOR_MARKER_' + label.replace(/[^A-Z0-9]+/g, '_');
+    group.position.set(x, y, z);
+
+    const markerGeo = new THREE.RingGeometry(SKELETON_CIRCLE_INNER_RADIUS, SKELETON_CIRCLE_OUTER_RADIUS, 72);
+    const markerMat = new THREE.MeshBasicMaterial({
+        color: colorHex,
+        transparent: true,
+        opacity: 0.78,
+        side: THREE.DoubleSide,
+        depthTest: true,
+        depthWrite: false,
+        toneMapped: false
+    });
+    const marker = new THREE.Mesh(markerGeo, markerMat);
+    marker.name = group.name + '_CIRCLE';
+    marker.rotation.x = -Math.PI / 2;
+    marker.position.set(0, 0, 0);
+    marker.renderOrder = 4;
+    group.add(marker);
+
+    skeletonFloorCircleGroup.add(group);
+    return group;
+}
+
+function syncOneFloorMarkerWithSkeleton(markerGroup, buttonObj, skeletonObj, fallbackOffset) {
+    if (!markerGroup) return;
+
+    const x = skeletonObj ? skeletonObj.group.position.x : fallbackOffset.x;
+    const z = skeletonObj ? skeletonObj.group.position.z : (SKELETON_LOCAL_Z_OFFSET + fallbackOffset.z);
+    const y = SKELETON_LOCAL_Y_OFFSET + fallbackOffset.y + 0.012;
+
+    markerGroup.position.set(x, y, z);
+
+    // Keep the button beside the circle. The button remains visible even when the circle is hidden,
+    // otherwise the user could not turn that skeleton back on.
+    if (buttonObj) buttonObj.position.set(x, y + 0.08, z - Math.max(0.72, SKELETON_CIRCLE_OUTER_RADIUS * 2.7));
+}
+
+function syncFloorMarkersWithSkeletons() {
+    syncOneFloorMarkerWithSkeleton(referenceFloorMarkerGroup, centerReferenceToggleButton, refSkeleton, REF_OFFSET);
+    syncOneFloorMarkerWithSkeleton(learnerFloorMarkerGroup, centerLearnerToggleButton, learnerSkeleton, LEARNER_OFFSET);
+    syncOneFloorMarkerWithSkeleton(ghostLearnerFloorMarkerGroup, centerGhostLearnerToggleButton, centerReferenceSkeleton || ghostSkeleton, GHOST_OFFSET);
+}
+
+function addFloorToggleButton(label, x, y, z, action) {
+    if (!skeletonFloorCircleGroup) return null;
+    const texture = createButtonCanvasTexture(label);
+    const material = new THREE.SpriteMaterial({
+        map: texture,
+        transparent: true,
+        opacity: 0.98,
+        depthTest: true,
+        depthWrite: false,
+        color: 0xffffff
+    });
+    const sprite = new THREE.Sprite(material);
+    sprite.name = 'FLOOR_' + action.toUpperCase() + '_BUTTON';
+    sprite.position.set(x, y, z);
+    sprite.scale.set(action === 'toggleGhostPair' ? 0.48 : 0.34, 0.16, 1);
+    sprite.renderOrder = 30;
+    sprite.userData.transportAction = action;
+    sprite.userData.centerButtonAction = action;
+    skeletonFloorCircleGroup.add(sprite);
+    return sprite;
+}
+
+function setFloorMarkerVisibility(markerGroup, visible) {
+    if (!markerGroup) return;
+    markerGroup.visible = visible;
+}
+
+function createFloorTextTexture(text, colorHex) {
+    const canvas = document.createElement('canvas');
+    canvas.width = 512;
+    canvas.height = 160;
+
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Background
+    ctx.fillStyle = sceneTheme === 'light'
+        ? 'rgba(255,255,255,0.92)'
+        : 'rgba(2,6,23,0.82)';
+    roundRectPath(ctx, 28, 34, canvas.width - 56, canvas.height - 68, 28);
+    ctx.fill();
+
+    // Border
+    ctx.strokeStyle = '#' + colorHex.toString(16).padStart(6, '0');
+    ctx.lineWidth = 6;
+    roundRectPath(ctx, 32, 38, canvas.width - 64, canvas.height - 76, 24);
+    ctx.stroke();
+
+    // Text (this is what was too dark before)
+    ctx.fillStyle = sceneTheme === 'light'
+        ? '#111827'   // black on light theme
+        : '#ffffff';  // white on dark theme
+
+    ctx.font = 'bold 54px Arial';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(text, canvas.width / 2, canvas.height / 2 + 3);
+
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.colorSpace = THREE.SRGBColorSpace;
+    texture.minFilter = THREE.LinearFilter;
+    texture.magFilter = THREE.LinearFilter;
+    texture.generateMipmaps = false;
+    texture.needsUpdate = true;
+
+    return texture;
+}
+
+function createButtonCanvasTexture(label) {
+    const canvas = document.createElement('canvas');
+    canvas.width = 512;
+    canvas.height = 192;
+    const ctx = canvas.getContext('2d');
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    const lightMode = sceneTheme === 'light';
+
+    // Light scene: dark-gray button with light text.
+    // Dark scene: light-gray button with dark text.
+    const shadowColor = lightMode
+        ? 'rgba(15, 23, 42, 0.38)'
+        : 'rgba(0, 0, 0, 0.42)';
+    const buttonColor = lightMode
+        ? '#374151'
+        : '#d1d5db';
+    const borderColor = lightMode
+        ? '#111827'
+        : '#f8fafc';
+    const textColor = lightMode
+        ? '#f8fafc'
+        : '#172033';
+
+    ctx.fillStyle = shadowColor;
+    roundRectPath(ctx, 27, 31, 460, 132, 32);
+    ctx.fill();
+
+    ctx.fillStyle = buttonColor;
+    roundRectPath(ctx, 20, 20, 460, 132, 32);
+    ctx.fill();
+
+    ctx.strokeStyle = borderColor;
+    ctx.lineWidth = 8;
+    roundRectPath(ctx, 24, 24, 452, 124, 28);
+    ctx.stroke();
+
+    ctx.fillStyle = textColor;
+    ctx.font = 'bold 52px Arial';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(label, 250, 88);
+
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.colorSpace = THREE.SRGBColorSpace;
+    texture.minFilter = THREE.LinearFilter;
+    texture.magFilter = THREE.LinearFilter;
+    texture.generateMipmaps = false;
+    texture.needsUpdate = true;
+    return texture;
+}
+
+function roundRectPath(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + w - r, y);
+    ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+    ctx.lineTo(x + w, y + h - r);
+    ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+    ctx.lineTo(x + r, y + h);
+    ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+    ctx.lineTo(x, y + r);
+    ctx.quadraticCurveTo(x, y, x + r, y);
+    ctx.closePath();
+}
+
+
+function getMetricDisplayName(value) {
+    const names = {
+        angle: 'Angle',
+        position: 'Position',
+        velocity: 'Velocity',
+        flux: 'Flux'
+    };
+    return names[value] || 'Angle';
+}
+
+function replaceTransportButtonLabel(button, label) {
+    if (!button || !button.material) return;
+    if (button.material.map) button.material.map.dispose();
+    button.material.map = createButtonCanvasTexture(label);
+    button.material.needsUpdate = true;
+}
+
+function refreshViewerSettingsButtons() {
+    replaceTransportButtonLabel(
+        centerSceneThemeButton,
+        sceneTheme === 'light' ? 'Scene: Light' : 'Scene: Dark'
+    );
+    replaceTransportButtonLabel(
+        centerMetricButton,
+        'Metric: ' + getMetricDisplayName(metric)
+    );
+}
+
+function cycleSceneThemeFrom3D() {
+    applySceneTheme(sceneTheme === 'dark' ? 'light' : 'dark');
+    refreshViewerSettingsButtons();
+}
+
+function cycleMetricFrom3D() {
+    const values = ['angle', 'position', 'velocity', 'flux'];
+    const currentIndex = Math.max(0, values.indexOf(metric));
+    metric = values[(currentIndex + 1) % values.length];
+
+    for (const id of ['metricSelect', 'webMetricSelect', 'sceneMetricSelect']) {
+        const select = $(id);
+        if (select) select.value = metric;
+    }
+
+    refreshViewerSettingsButtons();
+    updateFrame(currentFrame);
+}
+
+function createCenterTransportButtons() {
+    // Camera-locked ghost transport controls: always in front of the user/viewer,
+    // smaller, semi-transparent, and placed farther away from the eye.
+    // In camera coordinates, negative X is screen-left and positive X is screen-right.
+    centerPreviousButton = createTransportButtonSprite('Prev', new THREE.Vector3(-0.46, -0.52, -2.25), 'previousPhase');
+    centerPlayPauseButton = createTransportButtonSprite('Play', new THREE.Vector3(0.0, -0.52, -2.25), 'playPause');
+    centerNextButton = createTransportButtonSprite('Next', new THREE.Vector3(0.46, -0.52, -2.25), 'nextPhase');
+    centerSpeedSlider = createCameraSpeedSlider(new THREE.Vector3(0.0, -0.77, -2.25));
+    centerMenuToggleButton = createTransportButtonSprite('Hide', new THREE.Vector3(-0.78, -0.74, -2.25), 'toggleControls');
+    centerExitVRButton = createTransportButtonSprite('Exit VR', new THREE.Vector3(0.78, -0.74, -2.25), 'exitVR');
+
+    // Viewer settings are inside the 3D environment and remain visible in desktop and VR.
+    centerSceneThemeButton = createTransportButtonSprite(
+        sceneTheme === 'light' ? 'Scene: Light' : 'Scene: Dark',
+        new THREE.Vector3(-0.43, -0.91, -2.25),
+        'cycleSceneTheme'
+    );
+    centerMetricButton = createTransportButtonSprite(
+        'Metric: ' + getMetricDisplayName(metric),
+        new THREE.Vector3(0.43, -0.91, -2.25),
+        'cycleMetric'
+    );
+    centerHeatmapWallToggleButton = createTransportButtonSprite(
+        'Heatmap Wall: Off',
+        new THREE.Vector3(-0.43, -1.08, -2.25),
+        'toggleHeatmapWall'
+    );
+    centerDTWWallToggleButton = createTransportButtonSprite(
+        'DTW Wall: Off',
+        new THREE.Vector3(0.43, -1.08, -2.25),
+        'toggleDTWWall'
+    );
+    if (centerPreviousButton) centerPreviousButton.userData.centerButtonAction = 'prev';
+    if (centerPlayPauseButton) centerPlayPauseButton.userData.centerButtonAction = 'play';
+    if (centerNextButton) centerNextButton.userData.centerButtonAction = 'next';
+    if (centerMenuToggleButton) centerMenuToggleButton.userData.centerButtonAction = 'toggle';
+    if (centerExitVRButton) centerExitVRButton.userData.centerButtonAction = 'exitVR';
+    if (centerSceneThemeButton) centerSceneThemeButton.userData.centerButtonAction = 'cycleSceneTheme';
+    if (centerMetricButton) centerMetricButton.userData.centerButtonAction = 'cycleMetric';
+    if (centerHeatmapWallToggleButton) centerHeatmapWallToggleButton.userData.centerButtonAction = 'toggleHeatmapWall';
+    if (centerDTWWallToggleButton) centerDTWWallToggleButton.userData.centerButtonAction = 'toggleDTWWall';
+    if (centerSpeedSlider) {
+        centerSpeedSlider.userData.isSpeedSlider = true;
+        centerSpeedSlider.userData.speedSliderRole = 'visible';
+    }
+    if (centerSpeedSliderHitArea) {
+        centerSpeedSliderHitArea.userData.isSpeedSlider = true;
+        centerSpeedSliderHitArea.userData.speedSliderRole = 'hitArea';
+    }
+
+    refreshTransportControlButtons();
+}
+
+function createSpeedSliderCanvasTexture() {
+    const canvas = document.createElement('canvas');
+    canvas.width = 1024;
+    canvas.height = 280;
+    const ctx = canvas.getContext('2d');
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Ghost-like translucent panel. This affects ONLY the floating UI, not correction arrows.
+    // Extra internal padding keeps the border away from the Speed text and tick labels.
+    const panelX = 34;
+    const panelY = 18;
+    const panelW = 956;
+    const panelH = 244;
+    const borderX = 44;
+    const borderY = 28;
+    const borderW = 936;
+    const borderH = 224;
+
+    ctx.fillStyle = sceneTheme === 'light' ? 'rgba(15, 23, 42, 0.96)' : 'rgba(15, 23, 42, 0.92)';
+    roundRectPath(ctx, panelX, panelY, panelW, panelH, 46);
+    ctx.fill();
+    ctx.strokeStyle = sceneTheme === 'light' ? 'rgba(37, 99, 235, 1.0)' : 'rgba(219, 234, 254, 1.0)';
+    ctx.lineWidth = 6;
+    roundRectPath(ctx, borderX, borderY, borderW, borderH, 40);
+    ctx.stroke();
+
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 34px Arial';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('Speed', 92, 74);
+
+    ctx.font = 'bold 42px Arial';
+    ctx.textAlign = 'right';
+    ctx.fillText(playbackSpeed.toFixed(1) + '×', 922, 74);
+
+    const trackX = 132;
+    const trackY = 158;
+    const trackW = 760;
+    const trackH = 18;
+
+    ctx.fillStyle = 'rgba(148, 163, 184, 0.45)';
+    roundRectPath(ctx, trackX, trackY, trackW, trackH, 9);
+    ctx.fill();
+
+    const t = (playbackSpeed - 0.2) / (2.0 - 0.2);
+    const fillW = Math.max(0, Math.min(trackW, t * trackW));
+    ctx.fillStyle = 'rgba(96, 165, 250, 0.90)';
+    roundRectPath(ctx, trackX, trackY, fillW, trackH, 9);
+    ctx.fill();
+
+    const knobX = trackX + fillW;
+    ctx.beginPath();
+    ctx.arc(knobX, trackY + trackH / 2, 24, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.92)';
+    ctx.fill();
+    ctx.lineWidth = 5;
+    ctx.strokeStyle = 'rgba(37, 99, 235, 0.95)';
+    ctx.stroke();
+
+    ctx.fillStyle = 'rgba(203, 213, 225, 0.82)';
+    ctx.font = '26px Arial';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('0.2×', trackX, 224);
+    ctx.fillText('1.0×', trackX + trackW * ((1.0 - 0.2) / 1.8), 224);
+    ctx.fillText('2.0×', trackX + trackW, 224);
+
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.colorSpace = THREE.SRGBColorSpace;
+    texture.needsUpdate = true;
+    return texture;
+}
+
+function createCameraSpeedSlider(localPosition) {
+    const texture = createSpeedSliderCanvasTexture();
+    const material = new THREE.MeshBasicMaterial({
+        map: texture,
+        transparent: true,
+        opacity: 0.78,
+        depthTest: false,
+        depthWrite: false,
+        toneMapped: false,
+        side: THREE.DoubleSide
+    });
+
+    // Visible slider: this is what the user sees.
+    const mesh = new THREE.Mesh(new THREE.PlaneGeometry(SPEED_SLIDER_VISIBLE_WIDTH, SPEED_SLIDER_VISIBLE_HEIGHT), material);
+    mesh.name = 'CAMERA_GHOST_SPEED_SLIDER_VISIBLE';
+    mesh.position.copy(localPosition);
+    mesh.renderOrder = 201;
+    mesh.userData.transportAction = 'speedSliderVisible';
+    camera.add(mesh);
+
+    // Invisible padded hit area: much larger than the visible slider, so raycasting
+    // from mouse/VR controller is easier. This does not change the visual size.
+    const hitMaterial = new THREE.MeshBasicMaterial({
+        transparent: true,
+        opacity: 0.0,
+        depthTest: false,
+        depthWrite: false,
+        side: THREE.DoubleSide
+    });
+    centerSpeedSliderHitArea = new THREE.Mesh(new THREE.PlaneGeometry(SPEED_SLIDER_HIT_WIDTH, SPEED_SLIDER_HIT_HEIGHT), hitMaterial);
+    centerSpeedSliderHitArea.name = 'CAMERA_GHOST_SPEED_SLIDER_PADDED_HIT_AREA';
+    centerSpeedSliderHitArea.position.copy(localPosition);
+    centerSpeedSliderHitArea.renderOrder = 202;
+    centerSpeedSliderHitArea.userData.transportAction = 'speedSlider';
+    centerSpeedSliderHitArea.userData.visibleWidth = SPEED_SLIDER_VISIBLE_WIDTH;
+    camera.add(centerSpeedSliderHitArea);
+
+    return mesh;
+}
+
+function createTransportButtonSprite(label, localPosition, action) {
+    const texture = createButtonCanvasTexture(label);
+    const material = new THREE.SpriteMaterial({
+        map: texture,
+        transparent: true,
+        depthTest: false,
+        depthWrite: false,
+        opacity: 0.98,
+        color: 0xffffff
+    });
+
+    const sprite = new THREE.Sprite(material);
+    sprite.name = 'CENTER_' + action.toUpperCase() + '_BUTTON_BILLBOARD';
+    sprite.position.copy(localPosition);
+    const isViewerSetting = action === 'cycleSceneTheme' || action === 'cycleMetric' || action === 'toggleHeatmapWall' || action === 'toggleDTWWall';
+    sprite.scale.set(
+        action === 'playPause' ? 0.31 :
+            (isViewerSetting ? 0.40 :
+                ((action === 'toggleControls' || action === 'exitVR') ? 0.22 :
+                    (action.startsWith('toggle') ? 0.22 : 0.26))),
+        isViewerSetting ? 0.105 :
+            ((action === 'toggleControls' || action === 'exitVR') ? 0.095 : 0.115),
+        1
+    );
+    sprite.renderOrder = 200;
+    sprite.userData.transportAction = action;
+
+    camera.add(sprite);
+    return sprite;
+}
+
+function updateCenterPlayPauseButton() {
+    if (!centerPlayPauseButton) return;
+    const label = playing ? 'Pause' : 'Play';
+    if (centerPlayPauseButton.material.map) centerPlayPauseButton.material.map.dispose();
+    centerPlayPauseButton.material.map = createButtonCanvasTexture(label);
+    centerPlayPauseButton.material.needsUpdate = true;
+}
+
+function updateCenterMenuToggleButton() {
+    if (!centerMenuToggleButton) return;
+    const label = transportControlsVisible ? 'Hide' : 'Show';
+    if (centerMenuToggleButton.material.map) centerMenuToggleButton.material.map.dispose();
+    centerMenuToggleButton.material.map = createButtonCanvasTexture(label);
+    centerMenuToggleButton.material.needsUpdate = true;
+}
+
+function refreshTransportControlButtons() {
+    const refreshButton = (button, label) => {
+        if (!button) return;
+        if (button.material.map) button.material.map.dispose();
+        button.material.map = createButtonCanvasTexture(label);
+        button.material.needsUpdate = true;
+    };
+
+    refreshButton(centerPreviousButton, 'Prev');
+    refreshButton(centerNextButton, 'Next');
+    refreshButton(centerExitVRButton, 'Exit VR');
+
+    refreshButton(
+        centerSceneThemeButton,
+        sceneTheme === 'light' ? 'Scene: Light' : 'Scene: Dark'
+    );
+
+    refreshButton(
+        centerMetricButton,
+        'Metric: ' + getMetricDisplayName(metric)
+    );
+
+    refreshButton(
+        centerHeatmapWallToggleButton,
+        heatmapWallVisible ? 'Heatmap Wall: On' : 'Heatmap Wall: Off'
+    );
+    refreshButton(
+        centerDTWWallToggleButton,
+        dtwWallVisible ? 'DTW Wall: On' : 'DTW Wall: Off'
+    );
+
+    const arrowsVisible = $('showCorrectionArrows')
+        ? $('showCorrectionArrows').checked
+        : true;
+    refreshButton(
+        centerArrowsToggleButton,
+        arrowsVisible ? 'Arrows' : 'Arrows Off'
+    );
+
+    if (centerSpeedSlider) {
+        if (centerSpeedSlider.material.map) centerSpeedSlider.material.map.dispose();
+        centerSpeedSlider.material.map = createSpeedSliderCanvasTexture();
+        centerSpeedSlider.material.needsUpdate = true;
+    }
+}
+
+function getCollapsible3DControls() {
+    return [
+        centerPreviousButton,
+        centerNextButton,
+        centerSpeedSlider,
+        centerSpeedSliderHitArea,
+        centerExitVRButton,
+        centerSceneThemeButton,
+        centerMetricButton,
+        centerHeatmapWallToggleButton,
+        centerDTWWallToggleButton,
+        centerArrowsToggleButton
+    ].filter(Boolean);
+}
+
+function applyTransportControlsVisibility() {
+    // Play, Show/Hide, and the two wall toggles always remain visible so a hidden
+    // wall can be restored directly without first opening the full control menu.
+    for (const obj of getCollapsible3DControls()) {
+        obj.visible = transportControlsVisible;
+    }
+    if (centerPlayPauseButton) centerPlayPauseButton.visible = true;
+    if (centerMenuToggleButton) centerMenuToggleButton.visible = true;
+    if (centerHeatmapWallToggleButton) centerHeatmapWallToggleButton.visible = true;
+    if (centerDTWWallToggleButton) centerDTWWallToggleButton.visible = true;
+    updateCenterMenuToggleButton();
+}
+
+function syncWebWallToggleButtons() {
+    const heatmapBtn = $('heatmapWallToggleBtn');
+    const dtwBtn = $('dtwWallToggleBtn');
+
+    if (heatmapBtn) {
+        heatmapBtn.textContent = heatmapWallVisible ? 'Hide Heatmap Wall' : 'Show Heatmap Wall';
+        heatmapBtn.setAttribute('aria-pressed', heatmapWallVisible ? 'true' : 'false');
+    }
+    if (dtwBtn) {
+        dtwBtn.textContent = dtwWallVisible ? 'Hide DTW Wall' : 'Show DTW Wall';
+        dtwBtn.setAttribute('aria-pressed', dtwWallVisible ? 'true' : 'false');
+    }
+}
+
+function applyWallPanelVisibility() {
+    if (wallHeatmapPanel) wallHeatmapPanel.visible = heatmapWallVisible;
+    if (rightWallDTWPanel) rightWallDTWPanel.visible = dtwWallVisible;
+    refreshTransportControlButtons();
+    syncWebWallToggleButtons();
+}
+
+function toggleHeatmapWallVisibility() {
+    heatmapWallVisible = !heatmapWallVisible;
+    applyWallPanelVisibility();
+}
+
+function toggleDTWWallVisibility() {
+    dtwWallVisible = !dtwWallVisible;
+    applyWallPanelVisibility();
+}
+
+function exitVRSession() {
+    if (!renderer || !renderer.xr) return;
+    const session = renderer.xr.getSession && renderer.xr.getSession();
+    if (session && typeof session.end === 'function') {
+        session.end().catch(err => console.warn('Could not exit VR session:', err));
+    }
+}
+
+function toggleTransportControlsVisibility() {
+    transportControlsVisible = !transportControlsVisible;
+    applyTransportControlsVisibility();
+}
+
+
+function toggleSkeletonVisibility(checkboxId, buttonObj, label) {
+    const el = $(checkboxId);
+    if (el) el.checked = !el.checked;
+    refreshVisibilityToggleButtons();
+    updateFrame(currentFrame);
+}
+
+function toggleGhostLearnerAndArrows() {
+    const ghostRef = $('showGhostReference');
+    const ghostLearner = $('showGhostLearner');
+    const arrows = $('showCorrectionArrows');
+
+    // One button controls the complete overlay feedback: reference ghost, learner overlay, and arrows.
+    const currentlyVisible = ghostRef ? ghostRef.checked : true;
+    const nextVisible = !currentlyVisible;
+
+    if (ghostRef) ghostRef.checked = nextVisible;
+    if (ghostLearner) ghostLearner.checked = nextVisible;
+    if (arrows) arrows.checked = nextVisible;
+
+    refreshVisibilityToggleButtons();
+    updateFrame(currentFrame);
+}
+
+function updateToggleButtonLabel(buttonObj, label, enabled) {
+    if (!buttonObj) return;
+    const text = enabled ? label : (label + ' Off');
+    if (buttonObj.material.map) buttonObj.material.map.dispose();
+    buttonObj.material.map = createButtonCanvasTexture(text);
+    buttonObj.material.needsUpdate = true;
+}
+
+function refreshVisibilityToggleButtons() {
+    const refVisible = $('showReferenceSkeleton') ? $('showReferenceSkeleton').checked : true;
+    const learnerVisible = $('showLearnerSkeleton') ? $('showLearnerSkeleton').checked : true;
+    const ghostVisible = $('showGhostReference') ? $('showGhostReference').checked : true;
+
+    updateToggleButtonLabel(centerReferenceToggleButton, 'Ref', refVisible);
+    updateToggleButtonLabel(centerLearnerToggleButton, 'Learner', learnerVisible);
+    updateToggleButtonLabel(centerGhostLearnerToggleButton, 'Ghost/Learner', ghostVisible);
+
+    // The buttons now hide/show the matching skeleton AND its floor circle/label.
+    // The buttons themselves stay visible so the user can restore hidden skeletons.
+    setFloorMarkerVisibility(referenceFloorMarkerGroup, refVisible);
+    setFloorMarkerVisibility(learnerFloorMarkerGroup, learnerVisible);
+    setFloorMarkerVisibility(ghostLearnerFloorMarkerGroup, ghostVisible);
+}
+
+function effectivePlaybackMs() {
+    return Math.max(6, Math.round(BASE_PLAYBACK_MS / Math.max(0.2, playbackSpeed)));
+}
+
+function updateCenterSpeedSlider() {
+    if (!centerSpeedSlider) return;
+    if (centerSpeedSlider.material.map) centerSpeedSlider.material.map.dispose();
+    centerSpeedSlider.material.map = createSpeedSliderCanvasTexture();
+    centerSpeedSlider.material.needsUpdate = true;
+}
+
+function setPlaybackSpeed(value) {
+    playbackSpeed = Math.max(0.2, Math.min(2.0, Number(value || 1.0)));
+    playbackMs = effectivePlaybackMs();
+    const slider = $('speedSlider');
+    const label = $('speedLabel');
+    if (slider) slider.value = playbackSpeed.toFixed(1);
+    if (label) label.innerText = playbackSpeed.toFixed(1) + '×';
+    updateCenterSpeedSlider();
+    if (playing) startPlayTimer();
+}
+
+function setPlaybackSpeedFromSliderHit(hit) {
+    if (!hit || !hit.object) return;
+
+    // Use the padded invisible hit area for easier grabbing, but map the value
+    // to the visible slider width. Touching the padded area outside the visible
+    // track simply clamps to 0.2× or 2.0×.
+    const obj = hit.object;
+    const local = obj.worldToLocal(hit.point.clone());
+    const visibleWidth = Number(obj.userData.visibleWidth || SPEED_SLIDER_VISIBLE_WIDTH);
+    const halfVisible = visibleWidth / 2.0;
+    const u = Math.max(0, Math.min(1, (local.x + halfVisible) / visibleWidth));
+    const speed = 0.2 + u * (2.0 - 0.2);
+
+    // Snap to 0.1 steps so it behaves like a button/slider hybrid.
+    setPlaybackSpeed(Math.round(speed * 10) / 10);
+}
+
+function goPreviousFrame() {
+    stopPlaybackForPhaseButton();
+    previousPhase();
+}
+
+function goNextFrame() {
+    stopPlaybackForPhaseButton();
+    nextPhase();
+}
+
+function stopPlaybackForPhaseButton() {
+    playing = false;
+    phasePauseActive = false;
+    if (playTimer) clearInterval(playTimer);
+    const playBtn = $('playBtn');
+    if (playBtn) playBtn.innerText = 'Play';
+    updateCenterPlayPauseButton();
+}
+
+function installCenterTransportButtonClicks(container) {
+    container.addEventListener('pointerdown', (event) => {
+        // Only left click/tap should activate the 3D transport buttons.
+        if (event.button !== 0) return;
+
+        const rect = renderer.domElement.getBoundingClientRect();
+        playButtonPointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+        playButtonPointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+
+        camera.updateMatrixWorld(true);
+        playButtonRaycaster.setFromCamera(playButtonPointer, camera);
+        const buttonObjects = [centerPreviousButton, centerPlayPauseButton, centerNextButton, centerMenuToggleButton, centerExitVRButton, centerSceneThemeButton, centerMetricButton, centerHeatmapWallToggleButton, centerDTWWallToggleButton, centerReferenceToggleButton, centerLearnerToggleButton, centerGhostLearnerToggleButton, centerSpeedSliderHitArea].filter(Boolean);
+        const allClickableObjects = buttonObjects.concat(wallControlObjects || []);
+        const hits = playButtonRaycaster.intersectObjects(allClickableObjects, false);
+        if (hits.length > 0) {
+            event.preventDefault();
+            event.stopPropagation();
+            if (event.stopImmediatePropagation) event.stopImmediatePropagation();
+            const object = hits[0].object;
+
+            // 3D heatmap wall controls
+            if (object.userData.wallAction === 'metric') {
+                metric = object.userData.wallValue;
+                if ($('metricSelect')) $('metricSelect').value = metric;
+                updateFrame(currentFrame);
+                return;
+            }
+            if (object.userData.wallAction === 'stat') {
+                statMode = object.userData.wallValue;
+                if ($('statSelect')) $('statSelect').value = statMode;
+                updateFrame(currentFrame);
+                return;
+            }
+
+            // 3D transport buttons
+            const action = object.userData.transportAction;
+            if (action === 'speedSlider') {
+                speedSliderDragging = true;
+                setPlaybackSpeedFromSliderHit(hits[0]);
+                try { renderer.domElement.setPointerCapture(event.pointerId); } catch (err) {}
+                return;
+            }
+            else if (action === 'previousPhase') { stopPlaybackForPhaseButton(); previousPhase(); }
+            else if (action === 'nextPhase') { stopPlaybackForPhaseButton(); nextPhase(); }
+            else if (action === 'toggleControls') toggleTransportControlsVisibility();
+            else if (action === 'exitVR') exitVRSession();
+            else if (action === 'cycleSceneTheme') cycleSceneThemeFrom3D();
+            else if (action === 'cycleMetric') cycleMetricFrom3D();
+        else if (action === 'toggleHeatmapWall') toggleHeatmapWallVisibility();
+        else if (action === 'toggleDTWWall') toggleDTWWallVisibility();
+            else if (action === 'toggleRef') toggleSkeletonVisibility('showReferenceSkeleton', centerReferenceToggleButton, 'Ref');
+            else if (action === 'toggleLearner') toggleSkeletonVisibility('showLearnerSkeleton', centerLearnerToggleButton, 'Learner');
+            else if (action === 'toggleGhostPair') toggleGhostLearnerAndArrows();
+            else togglePlay();
+        }
+    }, true);
+
+    container.addEventListener('pointermove', (event) => {
+        if (!speedSliderDragging) return;
+        event.preventDefault();
+        event.stopPropagation();
+        if (event.stopImmediatePropagation) event.stopImmediatePropagation();
+        updatePlaybackSpeedFromPointerEvent(event);
+    }, true);
+
+    container.addEventListener('pointerup', (event) => {
+        if (!speedSliderDragging) return;
+        event.preventDefault();
+        event.stopPropagation();
+        if (event.stopImmediatePropagation) event.stopImmediatePropagation();
+        updatePlaybackSpeedFromPointerEvent(event);
+        speedSliderDragging = false;
+        try { renderer.domElement.releasePointerCapture(event.pointerId); } catch (err) {}
+    }, true);
+
+    container.addEventListener('pointercancel', (event) => {
+        speedSliderDragging = false;
+        try { renderer.domElement.releasePointerCapture(event.pointerId); } catch (err) {}
+    }, true);
+}
+
+function updatePlaybackSpeedFromPointerEvent(event) {
+    if (!centerSpeedSlider || !renderer || !camera) return;
+    const rect = renderer.domElement.getBoundingClientRect();
+    playButtonPointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+    playButtonPointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+    camera.updateMatrixWorld(true);
+    playButtonRaycaster.setFromCamera(playButtonPointer, camera);
+    const hits = playButtonRaycaster.intersectObject(centerSpeedSliderHitArea || centerSpeedSlider, false);
+    if (hits.length > 0) {
+        setPlaybackSpeedFromSliderHit(hits[0]);
+        return;
+    }
+
+    // If the pointer leaves the slider while dragging, project the ray onto the
+    // slider plane and clamp the local X coordinate. This makes it feel like a
+    // real slider instead of stopping at the edge.
+    const sliderWorldPos = new THREE.Vector3();
+    const sliderWorldQuat = new THREE.Quaternion();
+    (centerSpeedSliderHitArea || centerSpeedSlider).getWorldPosition(sliderWorldPos);
+    (centerSpeedSliderHitArea || centerSpeedSlider).getWorldQuaternion(sliderWorldQuat);
+
+    const normal = new THREE.Vector3(0, 0, 1).applyQuaternion(sliderWorldQuat).normalize();
+    const plane = new THREE.Plane().setFromNormalAndCoplanarPoint(normal, sliderWorldPos);
+    const hitPoint = new THREE.Vector3();
+    if (!playButtonRaycaster.ray.intersectPlane(plane, hitPoint)) return;
+
+    const local = (centerSpeedSliderHitArea || centerSpeedSlider).worldToLocal(hitPoint.clone());
+    const halfWidth = SPEED_SLIDER_VISIBLE_WIDTH / 2.0;
+    const u = Math.max(0, Math.min(1, (local.x + halfWidth) / SPEED_SLIDER_VISIBLE_WIDTH));
+    const speed = 0.2 + u * (2.0 - 0.2);
+    setPlaybackSpeed(Math.round(speed * 10) / 10);
+}
+
+
+function installRoomPlacementRaycastControls(container) {
+    // Click/tap empty room surfaces to move the USER VIEWPOINT inside the room.
+    // The skeletons stay fixed on the invisible skeleton anchor.
+    // Dragging still rotates the view; only a short click without hitting a button/menu moves the camera.
+    container.addEventListener('pointerdown', (event) => {
+        if (event.button !== 0) return;
+        pointerDownHit3DControl = false;
+        const rect = renderer.domElement.getBoundingClientRect();
+        playButtonPointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+        playButtonPointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+        camera.updateMatrixWorld(true);
+        playButtonRaycaster.setFromCamera(playButtonPointer, camera);
+        const buttonObjects = [centerPreviousButton, centerPlayPauseButton, centerNextButton, centerMenuToggleButton, centerExitVRButton, centerSceneThemeButton, centerMetricButton, centerHeatmapWallToggleButton, centerDTWWallToggleButton, centerReferenceToggleButton, centerLearnerToggleButton, centerGhostLearnerToggleButton, centerSpeedSliderHitArea].filter(Boolean);
+        const allClickableObjects = buttonObjects.concat(wallControlObjects || []);
+        pointerDownHit3DControl = playButtonRaycaster.intersectObjects(allClickableObjects, false).length > 0;
+        pointerDownInfo = { x: event.clientX, y: event.clientY, time: performance.now() };
+    }, true);
+
+    container.addEventListener('pointerup', (event) => {
+        if (event.button !== 0 || !pointerDownInfo || pointerDownHit3DControl || speedSliderDragging) return;
+        const dx = event.clientX - pointerDownInfo.x;
+        const dy = event.clientY - pointerDownInfo.y;
+        const moved = Math.sqrt(dx * dx + dy * dy);
+        const elapsed = performance.now() - pointerDownInfo.time;
+        pointerDownInfo = null;
+
+        // Do not reposition after orbit-dragging.
+        if (moved > 5 || elapsed > 650) return;
+
+        const rect = renderer.domElement.getBoundingClientRect();
+        playButtonPointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+        playButtonPointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+        camera.updateMatrixWorld(true);
+        roomPlacementRaycaster.setFromCamera(playButtonPointer, camera);
+        const hits = roomPlacementRaycaster.intersectObjects(roomPlacementSurfaces, false);
+        if (!hits.length) return;
+
+        const hit = hits[0].point;
+        moveViewpointToRoomPoint(hit);
+    }, true);
+}
+
+function moveViewpointToRoomPoint(worldPoint) {
+    // Raycast changes the USER / CAMERA position only.
+    // Skeletons stay fixed on the invisible skeletonAnchor.
+    // After every move, the camera automatically looks back toward the skeletons.
+    if (!floorCoordinateAnchor || !camera) return;
+
+    const localPoint = floorCoordinateAnchor.worldToLocal(worldPoint.clone());
+
+    // Keep the user inside the room. Leave a small margin so the camera does not clip through walls.
+    const bounds = getRoomPlacementBounds();
+    const newX = Math.max(bounds.minX, Math.min(bounds.maxX, localPoint.x));
+    const newZ = Math.max(bounds.minZ, Math.min(bounds.maxZ, localPoint.z));
+
+    // Standing eye height above the floor. Skeletons do not move.
+    const eyeHeight = RAYCAST_VIEW_EYE_HEIGHT;
+    const desiredLocalCamera = new THREE.Vector3(
+        newX,
+        SKELETON_LOCAL_Y_OFFSET + eyeHeight,
+        newZ
+    );
+    const desiredWorldCamera = floorCoordinateAnchor.localToWorld(desiredLocalCamera.clone());
+
+    // Desktop camera movement and VR movement are different.
+    // In VR, move the user rig because headset tracking owns camera.position.
+    const skeletonTarget = getSkeletonLookTargetWorld();
+    if (renderer && renderer.xr && renderer.xr.isPresenting && xrUserRig) {
+        xrUserRig.position.set(desiredWorldCamera.x, SKELETON_LOCAL_Y_OFFSET, desiredWorldCamera.z);
+        const dx = skeletonTarget.x - xrUserRig.position.x;
+        const dz = skeletonTarget.z - xrUserRig.position.z;
+        // Camera looks along local -Z. PI makes the headset face the skeleton target from the front/viewer side.
+    xrUserRig.rotation.y = Math.atan2(dx, dz) + Math.PI;
+    } else {
+        camera.position.copy(desiredWorldCamera);
+        orbitTarget.copy(skeletonTarget);
+        camera.lookAt(orbitTarget);
+        setOrbitFromCamera();
+    }
+}
+
+function getSkeletonLookTargetWorld() {
+    // Aim at the upper body area, not at the floor anchor point.
+    const target = new THREE.Vector3(0, 0.55, 0.95);
+    if (skeletonAnchor) {
+        skeletonAnchor.updateMatrixWorld(true);
+        return skeletonAnchor.localToWorld(target.clone());
+    }
+    if (floorCoordinateAnchor) {
+        return floorCoordinateAnchor.localToWorld(target.clone());
+    }
+    return DEFAULT_CAMERA_TARGET.clone();
+}
+
+function addToFloorCoordinateAnchor(object) {
+    if (floorCoordinateAnchor) floorCoordinateAnchor.add(object);
+    else scene.add(object);
+}
+
+function addToPlayButtonAnchor(object) {
+    if (skeletonAnchor) skeletonAnchor.add(object);
+    else if (playButtonAnchor) playButtonAnchor.add(object);
+    else addToFloorCoordinateAnchor(object);
+}
+
+function createTextSpriteMesh(text, localPosition) {
+    const canvas = document.createElement('canvas');
+    canvas.width = 700;
+    canvas.height = 128;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = 'rgba(2,6,23,0.0)';
+    ctx.fillRect(0,0,canvas.width,canvas.height);
+    ctx.fillStyle = '#172033';
+    ctx.font = 'bold 44px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText(text, canvas.width/2, 76);
+    const texture = new THREE.CanvasTexture(canvas);
+    const mat = new THREE.SpriteMaterial({ map: texture, transparent: true });
+    const sprite = new THREE.Sprite(mat);
+    sprite.position.copy(localPosition);
+    sprite.scale.set(0.55, 0.15, 1);
+    return sprite;
+}
+
+function addSkeletonLabel(skeletonGroup, text) {
+    // The label is a child of the skeleton group, not a child directly of the button.
+    // So whenever this skeleton group moves/rotates/scales, its label follows exactly.
+    const label = createTextSpriteMesh(text, new THREE.Vector3(0, 1.3, 0));
+    label.name = skeletonGroup.name + '_label';
+    skeletonGroup.add(label);
+    return label;
+}
+
+
+function createSkeleton(name, offset) {
+    const group = new THREE.Group();
+    group.name = name;
+    group.position.set(offset.x, SKELETON_LOCAL_Y_OFFSET + offset.y, SKELETON_LOCAL_Z_OFFSET + offset.z);
+    group.scale.set(bodyDisplayScale, bodyDisplayScale, bodyDisplayScale);
+
+    const joints = [];
+    const bones = [];
+
+    for (let i = 0; i < DATA.joint_names.length; i++) {
+        const geo = new THREE.SphereGeometry(0.025, 14, 14);
+        const mat = new THREE.MeshStandardMaterial({ color: 0xffe10d, roughness: 0.4 });
+        const sphere = new THREE.Mesh(geo, mat);
+        group.add(sphere);
+        joints.push(sphere);
+    }
+
+    for (const edge of DATA.edges) {
+        const curve = new THREE.CatmullRomCurve3([new THREE.Vector3(), new THREE.Vector3()]);
+        const geo = new THREE.TubeGeometry(curve, 1, 0.015, 8, false);
+        const mat = new THREE.MeshStandardMaterial({ color: 0xffe10d, roughness: 0.45 });
+        const bone = new THREE.Mesh(geo, mat);
+        bone.userData.edge = edge;
+        group.add(bone);
+        bones.push(bone);
+    }
+
+    addToPlayButtonAnchor(group);
+    return { group, joints, bones, trail: null };
+}
+
+
+function createPlainReferenceSkeleton(name, offset) {
+    const group = new THREE.Group();
+    group.name = name;
+    group.position.set(offset.x, SKELETON_LOCAL_Y_OFFSET + offset.y, SKELETON_LOCAL_Z_OFFSET + offset.z);
+    group.scale.set(bodyDisplayScale, bodyDisplayScale, bodyDisplayScale);
+
+    const joints = [];
+    const bones = [];
+
+    // This is the simple / solid learner pose used in the center overlay.
+    // It is intentionally NOT heat-map coloured. The transparent reference ghost
+    // shows where the learner should be at the current moment.
+    for (let i = 0; i < DATA.joint_names.length; i++) {
+        const geo = new THREE.SphereGeometry(0.023, 14, 14);
+        const mat = new THREE.MeshStandardMaterial({
+            color: 0x22c55e,
+            roughness: 0.35,
+            metalness: 0.0
+        });
+        const sphere = new THREE.Mesh(geo, mat);
+        group.add(sphere);
+        joints.push(sphere);
+    }
+
+    for (const edge of DATA.edges) {
+        const curve = new THREE.CatmullRomCurve3([new THREE.Vector3(), new THREE.Vector3()]);
+        const geo = new THREE.TubeGeometry(curve, 1, 0.014, 8, false);
+        const mat = new THREE.MeshStandardMaterial({
+            color: 0x22c55e,
+            roughness: 0.35,
+            metalness: 0.0
+        });
+        const bone = new THREE.Mesh(geo, mat);
+        bone.userData.edge = edge;
+        group.add(bone);
+        bones.push(bone);
+    }
+
+    addToPlayButtonAnchor(group);
+    // Center overlay labels are intentionally not added here to avoid duplicate text.
+    return { group, joints, bones, trail: null };
+}
+
+function createGhostSkeleton(name, offset) {
+    const group = new THREE.Group();
+    group.name = name;
+    group.position.set(offset.x, SKELETON_LOCAL_Y_OFFSET + offset.y, SKELETON_LOCAL_Z_OFFSET + offset.z);
+    group.scale.set(bodyDisplayScale, bodyDisplayScale, bodyDisplayScale);
+
+    const joints = [];
+    const bones = [];
+    const opacity = 0.30;
+
+    for (let i = 0; i < DATA.joint_names.length; i++) {
+        const geo = new THREE.SphereGeometry(0.018, 12, 12);
+        const mat = new THREE.MeshStandardMaterial({
+            color: 0xffffff,
+            transparent: true,
+            opacity: opacity,
+            roughness: 0.25,
+            depthWrite: false
+        });
+        const sphere = new THREE.Mesh(geo, mat);
+        sphere.renderOrder = 2;
+        group.add(sphere);
+        joints.push(sphere);
+    }
+
+    for (const edge of DATA.edges) {
+        const curve = new THREE.CatmullRomCurve3([new THREE.Vector3(), new THREE.Vector3()]);
+        const geo = new THREE.TubeGeometry(curve, 1, 0.009, 8, false);
+        const mat = new THREE.MeshStandardMaterial({
+            color: 0xffffff,
+            transparent: true,
+            opacity: opacity,
+            roughness: 0.25,
+            depthWrite: false
+        });
+        const bone = new THREE.Mesh(geo, mat);
+        bone.renderOrder = 2;
+        bone.userData.edge = edge;
+        group.add(bone);
+        bones.push(bone);
+    }
+
+    addToPlayButtonAnchor(group);
+    // Center overlay labels are intentionally not added here to avoid duplicate text.
+    return { group, joints, bones, trail: null };
+}
+
+function setupSkeletons() {
+    // Existing side-by-side view remains unchanged.
+    refSkeleton = createSkeleton('referenceSkeleton', REF_OFFSET);
+    learnerSkeleton = createSkeleton('learnerSkeleton', LEARNER_OFFSET);
+
+    // Literature-inspired ghost/reference visualization at the center:
+    // reference = semi-transparent target ghost, learner = simple solid skeleton.
+    centerReferenceSkeleton = createGhostSkeleton('centerReferenceGhost', GHOST_OFFSET);
+    ghostSkeleton = createPlainReferenceSkeleton('centerLearnerSimple', GHOST_OFFSET);
+
+    // This label is now a child of the center learner/ghost overlay skeleton group,
+    // so it aligns with that skeleton rather than being positioned directly from
+    // the play-button anchor.
+    syncFloorMarkersWithSkeletons();
+    refreshVisibilityToggleButtons();
+}
+
+
+function updatePlainReferenceSkeleton(skel, pose) {
+    if (!skel) return;
+    const show = $('showGhostLearner') ? $('showGhostLearner').checked : true;
+    skel.group.visible = show;
+    if (!show) return;
+
+    for (let i = 0; i < pose.length; i++) {
+        const p = pose[i];
+        skel.joints[i].position.set(p[0] * BODY_SCALE, p[1] * BODY_SCALE, p[2] * BODY_SCALE);
+        skel.joints[i].visible = $('showJoints') ? $('showJoints').checked : true;
+    }
+
+    for (let k = 0; k < skel.bones.length; k++) {
+        const bone = skel.bones[k];
+        const edge = bone.userData.edge;
+        const a = skel.joints[edge.ai].position;
+        const b = skel.joints[edge.bi].position;
+        const curve = new THREE.CatmullRomCurve3([a.clone(), b.clone()]);
+        bone.geometry.dispose();
+        bone.geometry = new THREE.TubeGeometry(curve, 1, 0.014, 8, false);
+        bone.material.color.setHex(0x22c55e);
+        bone.material.opacity = 1.0;
+        bone.material.transparent = false;
+        bone.material.depthWrite = true;
+    }
+}
+
+function updateGhostSkeleton(skel, pose) {
+    if (!skel) return;
+    const show = $('showGhostReference') ? $('showGhostReference').checked : true;
+    skel.group.visible = show;
+    if (!show) return;
+
+    const opacity = $('ghostOpacitySlider') ? Number($('ghostOpacitySlider').value) / 100.0 : 0.28;
+
+    for (let i = 0; i < pose.length; i++) {
+        const p = pose[i];
+        skel.joints[i].position.set(p[0] * BODY_SCALE, p[1] * BODY_SCALE, p[2] * BODY_SCALE);
+        skel.joints[i].material.opacity = opacity;
+        skel.joints[i].visible = $('showJoints') ? $('showJoints').checked : true;
+    }
+
+    for (let k = 0; k < skel.bones.length; k++) {
+        const bone = skel.bones[k];
+        const edge = bone.userData.edge;
+        const a = skel.joints[edge.ai].position;
+        const b = skel.joints[edge.bi].position;
+        bone.material.opacity = opacity;
+        const curve = new THREE.CatmullRomCurve3([a.clone(), b.clone()]);
+        bone.geometry.dispose();
+        bone.geometry = new THREE.TubeGeometry(curve, 1, 0.009, 8, false);
+    }
+}
+
+function updateSkeleton(skel, pose, normErrors, highlightGroup) {
+    if (!skel || !pose) return;
+    for (let i = 0; i < pose.length; i++) {
+        const p = pose[i];
+        skel.joints[i].position.set(p[0] * BODY_SCALE, p[1] * BODY_SCALE, p[2] * BODY_SCALE);
+
+        const jointName = DATA.joint_names[i];
+        let bestGroup = 'torso';
+        let bestValue = 0;
+        for (const g of DATA.group_order) {
+            if ((DATA.body_groups[g] || []).includes(jointName)) {
+                const val = normErrors[g] || 0;
+                if (val >= bestValue) {
+                    bestValue = val;
+                    bestGroup = g;
+                }
+            }
+        }
+        const color = getColorForError(bestValue);
+        skel.joints[i].material.color.copy(color);
+        const visible = $('showJoints').checked;
+        skel.joints[i].visible = visible;
+        // Keep joint size constant. Error is shown only through color, not scale.
+        skel.joints[i].scale.set(1.0, 1.0, 1.0);
+    }
+
+    for (let k = 0; k < skel.bones.length; k++) {
+        const bone = skel.bones[k];
+        const edge = bone.userData.edge;
+        const a = skel.joints[edge.ai].position;
+        const b = skel.joints[edge.bi].position;
+        const groupName = edge.group;
+        const errorValue = normErrors[groupName] || 0;
+        const color = getColorForError(errorValue);
+
+        bone.material.color.copy(color);
+        bone.scale.set(1, 1, 1);
+        // Keep bone thickness constant. Error is shown only through color, not thickness.
+        const radius = 0.014;
+        const curve = new THREE.CatmullRomCurve3([a.clone(), b.clone()]);
+        bone.geometry.dispose();
+        bone.geometry = new THREE.TubeGeometry(curve, 1, radius, 10, false);
+    }
+}
+
+
+
+function clearCorrectionArrows() {
+    for (const obj of correctionArrows) {
+        if (obj.parent) obj.parent.remove(obj);
+        obj.traverse(child => {
+            if (child.geometry) child.geometry.dispose();
+            if (child.material) child.material.dispose();
+        });
+    }
+    correctionArrows = [];
+}
+
+function makeCorrectionArrow(start, end, visualStrength, hexColor, trueDistance) {
+    const direction = end.clone().sub(start);
+    const realLength = direction.length();
+    if (realLength <= 1e-8) return null;
+
+    const dir = direction.clone().normalize();
+    const group = new THREE.Group();
+
+    /*
+      Attention-guided correction arrow.
+      Direction still points from learner joint toward the reference ghost joint,
+      but the visible arrow is CLAMPED so large pose errors do not dominate the scene.
+
+      visualStrength is already non-linear and clamped in [0, 1].
+      It controls:
+        - displayed length
+        - shaft radius
+        - arrow-head length
+        - arrow-head radius
+        - color intensity
+
+      IMPORTANT:
+      These correction arrows must stay fully opaque.
+      Only the floating Previous / Play / Next UI buttons are ghost-like.
+    */
+    const v = clamp01(visualStrength);
+
+    const MIN_ARROW_LENGTH = 0.018;
+    const MAX_ARROW_LENGTH = 0.22;
+    const MIN_SHAFT_RADIUS = 0.0012;
+    const MAX_SHAFT_RADIUS = 0.0085;
+    const MIN_HEAD_LENGTH = 0.006;
+    const MAX_HEAD_LENGTH = 0.042;
+    const MIN_HEAD_RADIUS = 0.003;
+    const MAX_HEAD_RADIUS = 0.018;
+
+    const arrowTotalLength = Math.min(realLength * 0.82, MIN_ARROW_LENGTH + v * (MAX_ARROW_LENGTH - MIN_ARROW_LENGTH));
+    const headLength = Math.min(arrowTotalLength * 0.42, MIN_HEAD_LENGTH + v * (MAX_HEAD_LENGTH - MIN_HEAD_LENGTH));
+    const shaftLength = Math.max(0.004, arrowTotalLength - headLength);
+    const shaftRadius = MIN_SHAFT_RADIUS + v * (MAX_SHAFT_RADIUS - MIN_SHAFT_RADIUS);
+    const headRadius = MIN_HEAD_RADIUS + v * (MAX_HEAD_RADIUS - MIN_HEAD_RADIUS);
+    const shaftGeometry = new THREE.CylinderGeometry(
+        shaftRadius,
+        shaftRadius,
+        shaftLength,
+        10,
+        1,
+        false
+    );
+
+    // Fully opaque error-colored shaft.
+    // Do not reuse ghost button opacity here.
+    const shaftMaterial = new THREE.MeshBasicMaterial({
+        color: hexColor,
+        transparent: false,
+        opacity: 1.0,
+        depthTest: false,
+        depthWrite: false,
+        toneMapped: false
+    });
+    const shaft = new THREE.Mesh(shaftGeometry, shaftMaterial);
+
+    const coneGeometry = new THREE.ConeGeometry(
+        headRadius,
+        headLength,
+        14,
+        1,
+        false
+    );
+
+    // Fully opaque error-colored arrow head.
+    // The color still comes from visualStrength / joint error.
+    const coneMaterial = new THREE.MeshBasicMaterial({
+        color: hexColor,
+        transparent: false,
+        opacity: 1.0,
+        depthTest: false,
+        depthWrite: false,
+        toneMapped: false
+    });
+    const cone = new THREE.Mesh(coneGeometry, coneMaterial);
+
+    // Cylinder and cone are created along local Y. Rotate local Y to the correction direction.
+    const quat = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir);
+    shaft.quaternion.copy(quat);
+    cone.quaternion.copy(quat);
+
+    const shaftCenter = start.clone().add(dir.clone().multiplyScalar(shaftLength * 0.5));
+    const coneCenter = start.clone().add(dir.clone().multiplyScalar(shaftLength + headLength * 0.5));
+    shaft.position.copy(shaftCenter);
+    cone.position.copy(coneCenter);
+
+    shaft.renderOrder = 20;
+    cone.renderOrder = 21;
+    group.renderOrder = 20;
+    group.userData.errorStrength = v;
+    group.userData.trueLength = trueDistance || realLength;
+    group.userData.displayLength = arrowTotalLength;
+
+    group.add(shaft);
+    group.add(cone);
+    return group;
+}
+
+function updateCorrectionArrows(referenceSkel, learnerSkel) {
+    clearCorrectionArrows();
+
+    const showRefGhost = $('showGhostReference') ? $('showGhostReference').checked : true;
+    const showGhostLearner = $('showGhostLearner') ? $('showGhostLearner').checked : true;
+    const showArrows = $('showCorrectionArrows') ? $('showCorrectionArrows').checked : true;
+
+    // Arrows are a pause-time guidance cue: learner joint -> target/reference ghost joint.
+    // During playback they are hidden to avoid visual clutter.
+    if (!showRefGhost || !showGhostLearner || !showArrows || playing || !referenceSkel || !learnerSkel) return;
+
+    const tmpRef = new THREE.Vector3();
+    const tmpLearner = new THREE.Vector3();
+
+    // Ignore only tiny differences.
+    // All visible joint differences are shown; arrow dimensions are still clamped
+    // so large pose errors do not dominate the scene.
+    const MIN_DISTANCE = 0.010;
+    const MAX_REFERENCE_DISTANCE = 0.14;
+
+    const candidates = [];
+
+    for (let i = 0; i < DATA.joint_names.length; i++) {
+        referenceSkel.joints[i].getWorldPosition(tmpRef);
+        learnerSkel.joints[i].getWorldPosition(tmpLearner);
+        const dist = tmpRef.distanceTo(tmpLearner);
+
+        if (dist >= MIN_DISTANCE) {
+            candidates.push({
+                jointIndex: i,
+                jointName: DATA.joint_names[i],
+                distance: dist
+            });
+        }
+    }
+
+    for (const item of candidates) {
+        referenceSkel.joints[item.jointIndex].getWorldPosition(tmpRef);
+        learnerSkel.joints[item.jointIndex].getWorldPosition(tmpLearner);
+
+        // Non-linear, clamped strength: large errors are visible but never explode.
+        const normalized = clamp01(item.distance / MAX_REFERENCE_DISTANCE);
+        const visualStrength = Math.sqrt(normalized);
+        const color = getColorForError(visualStrength);
+
+        const arrow = makeCorrectionArrow(
+            tmpLearner.clone(),
+            tmpRef.clone(),
+            visualStrength,
+            color.getHex(),
+            item.distance
+        );
+
+        if (arrow) {
+            arrow.userData.jointName = item.jointName;
+            scene.add(arrow);
+            correctionArrows.push(arrow);
+        }
+    }
+}
+
+function updateTrail(skel, sequence, frameIndex, offset) {
+    if (skel.trail) {
+        if (skel.trail.parent) skel.trail.parent.remove(skel.trail);
+        else scene.remove(skel.trail);
+        skel.trail.geometry.dispose();
+        skel.trail.material.dispose();
+        skel.trail = null;
+    }
+    if (!$('showTrails').checked) return;
+
+    const pelvisId = DATA.joint_names.indexOf('pelvis');
+    const start = Math.max(0, frameIndex - 25);
+    const points = [];
+    for (let i = start; i <= frameIndex; i++) {
+        const p = sequence[i][pelvisId];
+        points.push(new THREE.Vector3(
+            p[0] + offset.x,
+            p[1] + SKELETON_LOCAL_Y_OFFSET + offset.y + 0.005,
+            p[2] + SKELETON_LOCAL_Z_OFFSET + offset.z
+        ));
+    }
+    if (points.length < 2) return;
+    const geo = new THREE.BufferGeometry().setFromPoints(points);
+    const mat = new THREE.LineDashedMaterial({ color: 0x8b8b8b, dashSize: 0.04, gapSize: 0.04 });
+    const line = new THREE.Line(geo, mat);
+    line.computeLineDistances();
+    // Trails are independent from the play button.
+    // They stay in the floor/world coordinate system and do not move when the button anchor moves.
+    line.position.set(0, 0, 0);
+    line.rotation.set(0, 0, 0);
+    line.scale.set(1, 1, 1);
+    addToFloorCoordinateAnchor(line);
+    skel.trail = line;
+}
+
+function setupControls() {
+    $('frameSlider').max = DATA.metadata.num_reference_frames - 1;
+    $('frameSlider').addEventListener('input', e => updateFrame(Number(e.target.value)));
+    $('playBtn').onclick = togglePlay;
+    $('prevFrameBtn').onclick = goPreviousFrame;
+    $('nextFrameBtn').onclick = goNextFrame;
+    $('prevPhaseBtn').onclick = previousPhase;
+    $('nextPhaseBtn').onclick = nextPhase;
+    $('phaseStartBtn').onclick = () => {
+        const p = phaseForFrame(currentFrame);
+        updateFrame(Number(p.start_index));
+    };
+    $('phaseEndBtn').onclick = () => {
+        const p = phaseForFrame(currentFrame);
+        updateFrame(Number(p.end_index));
+    };
+    $('metricSelect').value = metric;
+    $('metricSelect').addEventListener('change', e => { metric = e.target.value; if ($('webMetricSelect')) $('webMetricSelect').value = metric; if ($('sceneMetricSelect')) $('sceneMetricSelect').value = metric; refreshViewerSettingsButtons(); updateFrame(currentFrame); });
+    $('statSelect').value = statMode;
+    $('statSelect').addEventListener('change', e => { statMode = e.target.value; updateFrame(currentFrame); });
+    $('speedSlider').addEventListener('input', e => {
+        setPlaybackSpeed(Number(e.target.value));
+    });
+    setPlaybackSpeed(playbackSpeed);
+    refreshVisibilityToggleButtons();
+    $('showFloor').addEventListener('change', e => {
+        floorMesh.visible = e.target.checked;
+        gridHelper.visible = e.target.checked;
+        if (roomGroup) roomGroup.visible = e.target.checked;
+    });
+    $('showReferenceSkeleton').addEventListener('change', () => { refreshVisibilityToggleButtons(); updateFrame(currentFrame); });
+    $('showLearnerSkeleton').addEventListener('change', () => { refreshVisibilityToggleButtons(); updateFrame(currentFrame); });
+    $('showGhostReference').addEventListener('change', () => { refreshVisibilityToggleButtons(); updateFrame(currentFrame); });
+    $('showGhostLearner').addEventListener('change', () => { refreshVisibilityToggleButtons(); updateFrame(currentFrame); });
+    $('showCorrectionArrows').addEventListener('change', () => { refreshVisibilityToggleButtons(); updateFrame(currentFrame); });
+    $('ghostOpacitySlider').addEventListener('input', e => {
+        $('ghostOpacityLabel').innerText = e.target.value + '%';
+        updateFrame(currentFrame);
+    });
+    $('showJoints').addEventListener('change', () => updateFrame(currentFrame));
+    $('showTrails').addEventListener('change', () => updateFrame(currentFrame));
+    $('bodyScaleSlider').value = Math.round(bodyDisplayScale * 100);
+    $('bodyScaleLabel').innerText = Math.round(bodyDisplayScale * 100) + '%';
+    $('bodyScaleSlider').addEventListener('input', e => {
+        bodyDisplayScale = Number(e.target.value) / 100.0;
+        $('bodyScaleLabel').innerText = Math.round(bodyDisplayScale * 100) + '%';
+        applyBodyDisplayScale();
+    });
+
+    document.addEventListener('keydown', (e) => {
+        if (e.target && ['INPUT','SELECT','TEXTAREA'].includes(e.target.tagName)) return;
+        if (e.code === 'Space') { e.preventDefault(); togglePlay(); }
+        else if (e.key === 'n' || e.key === 'N') goNextFrame();
+        else if (e.key === 'b' || e.key === 'B') goPreviousFrame();
+        else if (e.key === 'ArrowRight') nextPhase();
+        else if (e.key === 'ArrowLeft') previousPhase();
+        else if (e.key === 'Home') { const p = phaseForFrame(currentFrame); updateFrame(Number(p.start_index)); }
+        else if (e.key === 'End') { const p = phaseForFrame(currentFrame); updateFrame(Number(p.end_index)); }
+        else if (e.key === '1') { metric = 'position'; $('metricSelect').value = metric; updateFrame(currentFrame); }
+        else if (e.key === '2') { metric = 'velocity'; $('metricSelect').value = metric; updateFrame(currentFrame); }
+        else if (e.key === '3') { metric = 'flux'; $('metricSelect').value = metric; updateFrame(currentFrame); }
+        else if (e.key === '4') { metric = 'angle'; $('metricSelect').value = metric; updateFrame(currentFrame); }
+    });
+}
+
+function startPlayTimer() {
+    if (playTimer) clearInterval(playTimer);
+    playTimer = setInterval(() => {
+        if (!playing || phasePauseActive) return;
+        let next = currentFrame + 1;
+        if (next >= DATA.metadata.num_reference_frames) {
+            next = 0;
+            phasePauseSeen.clear();
+        }
+        updateFrame(next, true);
+    }, effectivePlaybackMs());
+}
+
+function togglePlay() {
+    playing = !playing;
+    $('playBtn').innerText = playing ? 'Pause' : 'Play';
+    updateCenterPlayPauseButton();
+    if (playing) startPlayTimer();
+    updateFrame(currentFrame);
+}
+
+function maybePauseAtPhaseEnd(meta) {
+    if (!playing) return;
+    const phase = phaseForFrame(currentFrame);
+    const key = String(meta.phase_id) + ':' + String(currentFrame);
+    const atEnd = Number(currentFrame) === Number(phase.end_index);
+    if (atEnd && !phasePauseSeen.has(key)) {
+        phasePauseSeen.add(key);
+        phasePauseActive = true;
+        setTimeout(() => { phasePauseActive = false; }, DATA.metadata.phase_end_pause_ms || 1000);
+    }
+}
+
+function nextPhase() {
+    const currentPhaseId = DATA.frame_meta[currentFrame].phase_id;
+    for (const p of DATA.phases) {
+        if (Number(p.phase_id) > Number(currentPhaseId)) {
+            updateFrame(Number(p.start_index));
+            return;
+        }
+    }
+    if (DATA.phases.length > 0) updateFrame(Number(DATA.phases[0].start_index));
+}
+
+function previousPhase() {
+    const currentPhaseId = DATA.frame_meta[currentFrame].phase_id;
+    let candidate = DATA.phases[0];
+    for (const p of DATA.phases) {
+        if (Number(p.phase_id) < Number(currentPhaseId)) candidate = p;
+    }
+    updateFrame(Number(candidate.start_index));
+}
+
+function updateFrame(index, fromPlayback=false) {
+    index = Math.max(0, Math.min(DATA.metadata.num_reference_frames - 1, Number(index)));
+    currentFrame = index;
+    const meta = DATA.frame_meta[index];
+    const phase = phaseForFrame(index);
+    const comparison = comparisonForPhase(meta.phase_id);
+    const learnerIndex = Number(meta.learner_index);
+
+    const refPose = DATA.reference_sequence[index];
+    const learnerPose = DATA.learner_sequence[learnerIndex];
+
+    const statKey = statMode || 'max';
+    const normErrors = (meta.normalized_errors_by_stat && meta.normalized_errors_by_stat[statKey] && meta.normalized_errors_by_stat[statKey][metric]) ||
+                       (meta.normalized_errors_max && meta.normalized_errors_max[metric]) || {};
+    const rawErrors = (meta.group_errors_by_stat && meta.group_errors_by_stat[statKey] && meta.group_errors_by_stat[statKey][metric]) ||
+                      (meta.group_errors_max && meta.group_errors_max[metric]) || {};
+    const highlight = (meta.highlight_group_by_stat && meta.highlight_group_by_stat[statKey] && meta.highlight_group_by_stat[statKey][metric]) ||
+                      (meta.highlight_group_max && meta.highlight_group_max[metric]) || 'torso';
+
+    const refVisible = $('showReferenceSkeleton') ? $('showReferenceSkeleton').checked : true;
+    const learnerVisible = $('showLearnerSkeleton') ? $('showLearnerSkeleton').checked : true;
+    if (refSkeleton) refSkeleton.group.visible = refVisible;
+    if (learnerSkeleton) learnerSkeleton.group.visible = learnerVisible;
+    refreshVisibilityToggleButtons();
+    updateSkeleton(refSkeleton, refPose, normErrors, highlight);
+    updateSkeleton(learnerSkeleton, learnerPose, normErrors, highlight);
+
+    // Center ghost/reference overlay:
+    // reference is the semi-transparent target ghost; learner is the simple solid skeleton.
+    updateGhostSkeleton(centerReferenceSkeleton, refPose);
+    updatePlainReferenceSkeleton(ghostSkeleton, learnerPose);
+    updateCorrectionArrows(centerReferenceSkeleton, ghostSkeleton);
+    updateTrail(refSkeleton, DATA.reference_sequence, index, REF_OFFSET);
+    updateTrail(learnerSkeleton, DATA.learner_sequence, learnerIndex, LEARNER_OFFSET);
+
+    $('frameSlider').value = index;
+    $('frameLabel').innerText = index;
+    $('timeLabel').innerText = `Ref frame ${meta.reference_frame} → learner frame ${meta.learner_frame}`;
+
+    updatePanels(meta, phase, comparison, rawErrors, normErrors, highlight);
+    updateTimeline(meta.phase_id);
+    drawCurve(meta.phase_id, meta.phase_progress);
+
+    // Keep the 3D wall dashboards synchronized with the same live state
+    // used by the browser analysis dashboard. This runs on playback,
+    // scrubbing, phase jumps, metric/stat changes, and manual frame changes.
+    refreshWallHeatmapPanel(meta.phase_id, meta.phase_progress);
+    refreshRightWallDTWPanel(meta, phase);
+    refreshWebAnalysisPanels(meta, phase);
+
+    $('hud').innerHTML = `
+        <b>${playing ? 'Playing' : 'Paused'}</b><br>
+        Ref index/frame: ${meta.reference_index}<br>
+        Learner index/frame: ${meta.learner_index}<br>
+        Phase: P${meta.phase_id} (${meta.phase_progress.toFixed(1)}%)<br>
+        Heatmap: ${metric} / ${statMode}<br>
+        Highest error: ${highlight}<br>
+        Ghost reference: ${$('showGhostReference').checked ? 'on' : 'off'} | Ghost learner: ${$('showGhostLearner').checked ? 'on' : 'off'}<br>
+        Pause arrows: ${(!playing && $('showCorrectionArrows').checked) ? 'shown' : 'hidden'}
+    `;
+
+    updateCenterPlayPauseButton();
+    if (fromPlayback) maybePauseAtPhaseEnd(meta);
+}
+
+function updateMetadata() {
+    $('metadataBox').innerHTML = `
+        <b>Reference track:</b> ${DATA.metadata.reference_track_id}<br>
+        <b>Learner track:</b> ${DATA.metadata.learner_track_id}<br>
+        <b>Reference frames:</b> ${DATA.metadata.num_reference_frames}<br>
+        <b>Learner frames:</b> ${DATA.metadata.num_learner_frames}<br>
+        <b>Reference FPS:</b> ${Number(DATA.metadata.reference_fps).toFixed(2)}<br>
+        <b>Learner FPS:</b> ${Number(DATA.metadata.learner_fps).toFixed(2)}
+    `;
+}
+
+function updatePanels(meta, phase, comparison, rawErrors, normErrors, highlight) {
+    $('phaseInfo').innerHTML = `
+        <b>Phase:</b> P${meta.phase_id}<br>
+        <b>Reference phase index:</b> ${phase.start_index} - ${phase.end_index}<br>
+        <b>Reference phase frame:</b> ${phase.start_frame} - ${phase.end_frame}<br>
+        <b>Progress:</b> ${meta.phase_progress.toFixed(1)}%<br>
+        <b>Duration ratio:</b> ${Number(comparison.duration_ratio || 0).toFixed(3)}<br>
+        <b>Reference dominant flux:</b> ${comparison.reference_dominant_flux_group || '-'}<br>
+        <b>Learner dominant flux:</b> ${comparison.learner_dominant_flux_group || '-'}<br>
+        <b>Highlighted group:</b> ${highlight}
+    `;
+    $('dtwInfo').innerHTML = `
+        Reference index ${meta.reference_index} / frame ${meta.reference_frame}<br>
+        ↓ DTW mapped to<br>
+        Learner index ${meta.learner_index} / frame ${meta.learner_frame}
+    `;
+
+    let html = '';
+    for (const g of DATA.group_order) {
+        const raw = Number(rawErrors[g] || 0);
+        const norm = Number(normErrors[g] || 0);
+        html += `
+            <div class="barLabel"><span><b>${g}</b></span><span>${raw.toFixed(4)} | ${(norm*100).toFixed(0)}%</span></div>
+            <div class="barOuter"><div class="barInner" style="width:${norm*100}%"></div></div>
+        `;
+    }
+    $('errorBars').innerHTML = html;
+}
+
+function updateTimeline(activePhaseId) {
+    let html = '';
+    for (const p of DATA.phases) {
+        const active = Number(p.phase_id) === Number(activePhaseId) ? 'phaseActive' : '';
+        html += `<div class="phaseCell ${active}" onclick="updateFrame(${Number(p.start_index)})">P${p.phase_id}<br>${p.start_frame}-${p.end_frame}</div>`;
+    }
+    $('phaseTimeline').innerHTML = html;
+}
+
+function drawCurve(phaseId, percent) {
+    const canvas = $('curveCanvas');
+    const ctx = canvas.getContext('2d');
+    const w = canvas.width;
+    const h = canvas.height;
+    ctx.clearRect(0,0,w,h);
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0,0,w,h);
+
+    const curve = DATA.curves[String(phaseId)];
+    if (!curve) {
+        ctx.fillStyle = '#526174';
+        ctx.fillText('No phase_time_metric_curves.csv data', 18, 35);
+        return;
+    }
+
+    const margin = 22;
+    const plotW = w - margin*2;
+    const plotH = h - margin*2;
+
+    let series = [];
+    for (const g of DATA.group_order) {
+        series.push([g, curve.group_curves[metric][g]]);
+    }
+
+    let all = [];
+    for (const s of series) all = all.concat(s[1] || []);
+    let maxV = Math.max(...all.map(Number), 1e-9);
+
+    ctx.strokeStyle = '#d7e0ea';
+    ctx.strokeRect(margin, margin, plotW, plotH);
+
+    const colors = ['#38bdf8','#fb7185','#facc15','#4ade80','#c084fc','#fb923c'];
+    series.forEach((s, idx) => {
+        const vals = s[1] || [];
+        if (vals.length === 0) return;
+        ctx.strokeStyle = colors[idx % colors.length];
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        for (let i=0; i<vals.length; i++) {
+            const x = margin + (i / Math.max(vals.length-1, 1)) * plotW;
+            const y = margin + plotH - (Number(vals[i]) / maxV) * plotH;
+            if (i === 0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+        }
+        ctx.stroke();
+        ctx.fillStyle = colors[idx % colors.length];
+        ctx.font = '11px Arial';
+        ctx.fillText(s[0], margin + 6 + idx*78, 13);
+    });
+
+    const xCur = margin + (Number(percent || 0) / 100) * plotW;
+    ctx.strokeStyle = '#2563eb';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(xCur, margin);
+    ctx.lineTo(xCur, margin + plotH);
+    ctx.stroke();
+
+    ctx.fillStyle = '#526174';
+    ctx.font = '11px Arial';
+    ctx.fillText('Phase time (%)', margin + plotW - 85, h - 6);
+}
+
+
+function setOrbitFromCamera() {
+    if (!camera) return;
+    if (!orbitTarget) orbitTarget = DEFAULT_CAMERA_TARGET.clone();
+    const offset = camera.position.clone().sub(orbitTarget);
+    orbitRadius = Math.max(MIN_ORBIT_RADIUS, Math.min(MAX_ORBIT_RADIUS, offset.length() || 5.0));
+    orbitTheta = Math.atan2(offset.x, offset.z);
+    orbitPhi = Math.acos(Math.max(-1, Math.min(1, offset.y / orbitRadius)));
+}
+
+function updateCameraFromOrbit() {
+    orbitPhi = Math.max(0.08, Math.min(Math.PI - 0.08, orbitPhi));
+    orbitRadius = Math.max(MIN_ORBIT_RADIUS, Math.min(MAX_ORBIT_RADIUS, orbitRadius));
+
+    const sinPhi = Math.sin(orbitPhi);
+    camera.position.set(
+        orbitTarget.x + orbitRadius * sinPhi * Math.sin(orbitTheta),
+        orbitTarget.y + orbitRadius * Math.cos(orbitPhi),
+        orbitTarget.z + orbitRadius * sinPhi * Math.cos(orbitTheta)
+    );
+    camera.lookAt(orbitTarget);
+}
+
+function installMouseOrbitControls(container) {
+    let dragging = false;
+    let mode = 'rotate';
+    let lastX = 0;
+    let lastY = 0;
+
+    container.addEventListener('contextmenu', e => e.preventDefault());
+
+    container.addEventListener('pointerdown', e => {
+        dragging = true;
+        lastX = e.clientX;
+        lastY = e.clientY;
+        mode = (e.button === 2 || e.button === 1 || e.shiftKey) ? 'pan' : 'rotate';
+        container.setPointerCapture(e.pointerId);
+    });
+
+    container.addEventListener('pointermove', e => {
+        if (!dragging) return;
+        const dx = e.clientX - lastX;
+        const dy = e.clientY - lastY;
+        lastX = e.clientX;
+        lastY = e.clientY;
+
+        if (mode === 'rotate') {
+            orbitTheta -= dx * 0.007;
+            orbitPhi -= dy * 0.007;
+            updateCameraFromOrbit();
+        } else {
+            const panSpeed = orbitRadius * 0.0016;
+            const forward = orbitTarget.clone().sub(camera.position).normalize();
+            const right = new THREE.Vector3().crossVectors(forward, camera.up).normalize();
+            const up = new THREE.Vector3().crossVectors(right, forward).normalize();
+            orbitTarget.addScaledVector(right, -dx * panSpeed);
+            orbitTarget.addScaledVector(up, dy * panSpeed);
+            updateCameraFromOrbit();
+        }
+    });
+
+    container.addEventListener('pointerup', e => {
+        dragging = false;
+        try { container.releasePointerCapture(e.pointerId); } catch (err) {}
+    });
+
+    container.addEventListener('wheel', e => {
+        e.preventDefault();
+        const factor = Math.exp(e.deltaY * 0.0012);
+        orbitRadius *= factor;
+        updateCameraFromOrbit();
+    }, { passive: false });
+}
+
+function resetOrbitView() {
+    orbitTarget.copy(getSkeletonLookTargetWorld());
+    camera.position.copy(getStartingCameraPosition());
+    camera.lookAt(orbitTarget);
+    setOrbitFromCamera();
+    updateCameraFromOrbit();
+}
+
+function setCameraPreset(preset) {
+    orbitTarget.copy(getSkeletonLookTargetWorld());
+    const dist = START_VIEW_DISTANCE_FROM_SKELETONS;
+    if (preset === 'front') camera.position.set(START_VIEW_SIDE_OFFSET, SKELETON_LOCAL_Y_OFFSET + START_VIEW_EYE_HEIGHT, DEFAULT_CAMERA_TARGET.z - dist);
+    else if (preset === 'side') camera.position.set(DEFAULT_CAMERA_TARGET.x + dist, SKELETON_LOCAL_Y_OFFSET + START_VIEW_EYE_HEIGHT, DEFAULT_CAMERA_TARGET.z);
+    else if (preset === 'top') camera.position.set(DEFAULT_CAMERA_TARGET.x, SKELETON_LOCAL_Y_OFFSET + ROOM_HEIGHT + 0.8, DEFAULT_CAMERA_TARGET.z + 0.001);
+    else camera.position.set(DEFAULT_CAMERA_TARGET.x + dist * 0.65, SKELETON_LOCAL_Y_OFFSET + START_VIEW_EYE_HEIGHT + 0.55, DEFAULT_CAMERA_TARGET.z - dist * 0.65);
+    camera.lookAt(orbitTarget);
+    setOrbitFromCamera();
+    updateCameraFromOrbit();
+}
+
+
+function updateXRSliderDrag() {
+    if (!activeXRSliderController || !centerSpeedSliderHitArea) return;
+    scene.updateMatrixWorld(true);
+    activeXRSliderController.updateMatrixWorld(true);
+    xrTempMatrix.identity().extractRotation(activeXRSliderController.matrixWorld);
+    xrRaycaster.ray.origin.setFromMatrixPosition(activeXRSliderController.matrixWorld);
+    xrRaycaster.ray.direction.set(0, 0, -1).applyMatrix4(xrTempMatrix).normalize();
+
+    const sliderWorldPos = new THREE.Vector3();
+    const sliderWorldQuat = new THREE.Quaternion();
+    centerSpeedSliderHitArea.getWorldPosition(sliderWorldPos);
+    centerSpeedSliderHitArea.getWorldQuaternion(sliderWorldQuat);
+    const normal = new THREE.Vector3(0, 0, 1).applyQuaternion(sliderWorldQuat).normalize();
+    const plane = new THREE.Plane().setFromNormalAndCoplanarPoint(normal, sliderWorldPos);
+    const hitPoint = new THREE.Vector3();
+    if (!xrRaycaster.ray.intersectPlane(plane, hitPoint)) return;
+
+    const local = centerSpeedSliderHitArea.worldToLocal(hitPoint.clone());
+    const halfWidth = SPEED_SLIDER_VISIBLE_WIDTH / 2.0;
+    const u = Math.max(0, Math.min(1, (local.x + halfWidth) / SPEED_SLIDER_VISIBLE_WIDTH));
+    const speed = 0.2 + u * (2.0 - 0.2);
+    setPlaybackSpeed(Math.round(speed * 10) / 10);
+}
+
+function animate() {
+    renderer.setAnimationLoop(() => {
+        updateXRSliderDrag();
+        updateXRControllerHover();
+        renderer.render(scene, camera);
+    });
+}
+
+// Visible webpage controls for showing/hiding the wall-mounted panels.
+const heatmapWallToggleBtn = $('heatmapWallToggleBtn');
+const dtwWallToggleBtn = $('dtwWallToggleBtn');
+if (heatmapWallToggleBtn) {
+    heatmapWallToggleBtn.addEventListener('click', toggleHeatmapWallVisibility);
+}
+if (dtwWallToggleBtn) {
+    dtwWallToggleBtn.addEventListener('click', toggleDTWWallVisibility);
+}
+syncWebWallToggleButtons();
+
+// Inline HTML onclick handlers cannot see module-scoped functions unless we expose them.
+window.setCameraPreset = setCameraPreset;
+window.resetOrbitView = resetOrbitView;
+
+init().catch(err => {
+    showViewerFatalError(err, 'init');
+});
+</script>
+</body>
+</html>
