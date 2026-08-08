@@ -1563,6 +1563,10 @@ function applySceneTheme(theme) {
     updateCenterMenuToggleButton();
     refreshTransportControlButtons();
     refreshVisibilityToggleButtons();
+
+    // Wall dashboards are canvas textures, so they must be explicitly redrawn
+    // when the scene theme changes. Their semantic data colors stay unchanged.
+    refreshWallThemeTextures();
 }
 
 function setupSceneThemeToggle() {
@@ -2080,6 +2084,154 @@ function createRoom(roomSize, roomHeight) {
 // ============================================================
 // 3D WALL HEATMAP CONTROL PANEL
 // ============================================================
+function getWallThemePalette(useSceneTheme = true) {
+    const lightMode = useSceneTheme && sceneTheme === 'light';
+    return lightMode ? {
+        panel: '#f8fafc',
+        panelSoft: '#ffffff',
+        border: '#94a3b8',
+        borderSoft: '#cbd5e1',
+        grid: '#cbd5e1',
+        axis: '#64748b',
+        text: '#172033',
+        muted: '#526174',
+        button: '#e2e8f0',
+        buttonBorder: '#94a3b8',
+        buttonActive: '#2563eb',
+        buttonActiveBorder: '#1d4ed8',
+        buttonText: '#172033',
+        buttonActiveText: '#ffffff',
+        cursor: '#172033',
+        speedBackground: '#eff6ff'
+    } : {
+        panel: '#020617',
+        panelSoft: '#0f172a',
+        border: '#64748b',
+        borderSoft: '#334155',
+        grid: '#475569',
+        axis: '#94a3b8',
+        text: '#e5e7eb',
+        muted: '#cbd5e1',
+        button: '#334155',
+        buttonBorder: '#64748b',
+        buttonActive: '#2563eb',
+        buttonActiveBorder: '#bfdbfe',
+        buttonText: '#ffffff',
+        buttonActiveText: '#ffffff',
+        cursor: '#ffffff',
+        speedBackground: '#0f172a'
+    };
+}
+
+function createHeatmapPanelBackgroundTexture() {
+    const ui = getWallThemePalette(true);
+    return createPanelCanvasTexture(1400, 760, (ctx, w, h) => {
+        ctx.clearRect(0, 0, w, h);
+        ctx.fillStyle = ui.panel;
+        roundRectPath(ctx, 20, 20, w - 40, h - 40, 42);
+        ctx.fill();
+        ctx.strokeStyle = ui.border;
+        ctx.lineWidth = 6;
+        roundRectPath(ctx, 24, 24, w - 48, h - 48, 38);
+        ctx.stroke();
+        ctx.fillStyle = ui.text;
+        ctx.font = 'bold 54px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('Heatmap Controls', w/2, 82);
+        ctx.fillStyle = ui.muted;
+        ctx.font = '30px Arial';
+        ctx.textAlign = 'left';
+        ctx.fillText('Metric', 90, 160);
+        ctx.fillText('Statistic', 90, 292);
+        ctx.fillText('Heatmap scale', 90, 390);
+        ctx.fillText('Phase error graph', 90, 485);
+
+        // Preserve the semantic low-to-high heatmap colors in both themes.
+        const grd = ctx.createLinearGradient(360, 372, 760, 372);
+        grd.addColorStop(0, '#ffe10d');
+        grd.addColorStop(1, '#e60000');
+        ctx.fillStyle = grd;
+        roundRectPath(ctx, 360, 354, 600, 36, 18);
+        ctx.fill();
+        ctx.strokeStyle = ui.text;
+        ctx.lineWidth = 3;
+        roundRectPath(ctx, 360, 354, 600, 36, 18);
+        ctx.stroke();
+        ctx.fillStyle = ui.muted;
+        ctx.font = '24px Arial';
+        ctx.fillText('low', 1000, 383);
+        ctx.fillText(' - ', 1060, 383);
+        ctx.fillText('high', 1100, 383);
+    });
+}
+
+function createDTWDashboardBackgroundTexture() {
+    const ui = getWallThemePalette(true);
+    return createPanelCanvasTexture(1900, 900, (ctx, w, h) => {
+        ctx.clearRect(0, 0, w, h);
+        ctx.fillStyle = ui.panel;
+        roundRectPath(ctx, 20, 20, w - 40, h - 40, 44);
+        ctx.fill();
+        ctx.strokeStyle = ui.border;
+        ctx.lineWidth = 6;
+        roundRectPath(ctx, 24, 24, w - 48, h - 48, 40);
+        ctx.stroke();
+        ctx.fillStyle = ui.text;
+        ctx.font = 'bold 58px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('DTW Alignment', w / 2, 84);
+    });
+}
+
+function createWallButtonTexture(label, active) {
+    const ui = getWallThemePalette(true);
+    return createPanelCanvasTexture(512, 192, (ctx, cw, ch) => {
+        ctx.clearRect(0, 0, cw, ch);
+        ctx.fillStyle = active ? ui.buttonActive : ui.button;
+        roundRectPath(ctx, 24, 24, cw - 48, ch - 48, 34);
+        ctx.fill();
+        ctx.strokeStyle = active ? ui.buttonActiveBorder : ui.buttonBorder;
+        ctx.lineWidth = 8;
+        roundRectPath(ctx, 28, 28, cw - 56, ch - 56, 30);
+        ctx.stroke();
+        ctx.fillStyle = active ? ui.buttonActiveText : ui.buttonText;
+        ctx.font = 'bold 54px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(label, cw/2, ch/2 + 3);
+    });
+}
+
+function refreshWallThemeTextures() {
+    if (wallHeatmapPanel) {
+        const bg = wallHeatmapPanel.getObjectByName('wall_heatmap_panel_background');
+        if (bg && bg.material) {
+            if (bg.material.map) bg.material.map.dispose();
+            bg.material.map = createHeatmapPanelBackgroundTexture();
+            bg.material.needsUpdate = true;
+        }
+    }
+
+    if (rightWallDTWPanel) {
+        const bg = rightWallDTWPanel.getObjectByName('right_wall_dtw_dashboard_background');
+        if (bg && bg.material) {
+            if (bg.material.map) bg.material.map.dispose();
+            bg.material.map = createDTWDashboardBackgroundTexture();
+            bg.material.needsUpdate = true;
+        }
+    }
+
+    if (DATA && DATA.frame_meta && DATA.frame_meta.length) {
+        const safeIndex = Math.max(0, Math.min(DATA.frame_meta.length - 1, Number(currentFrame) || 0));
+        const meta = DATA.frame_meta[safeIndex];
+        const phase = phaseForFrame(safeIndex);
+        if (meta) {
+            refreshWallHeatmapPanel(meta.phase_id, meta.phase_progress);
+            refreshRightWallDTWPanel(meta, phase);
+        }
+    }
+}
+
 function createPanelCanvasTexture(width, height, drawFn) {
     const canvas = document.createElement('canvas');
     canvas.width = width;
@@ -2136,22 +2288,8 @@ function makeWallPlane(width, height, texture, localX, localY, localZ, name) {
 }
 
 function createWallButton(label, action, value, x, y, w=0.42, h=0.16) {
-    const tex = createPanelCanvasTexture(512, 192, (ctx, cw, ch) => {
-        const active = (action === 'metric' && metric === value) || (action === 'stat' && statMode === value);
-        ctx.clearRect(0, 0, cw, ch);
-        ctx.fillStyle = active ? '#2563eb' : '#334155';
-        roundRectPath(ctx, 24, 24, cw - 48, ch - 48, 34);
-        ctx.fill();
-        ctx.strokeStyle = active ? '#bfdbfe' : '#64748b';
-        ctx.lineWidth = 8;
-        roundRectPath(ctx, 28, 28, cw - 56, ch - 56, 30);
-        ctx.stroke();
-        ctx.fillStyle = '#ffffff';
-        ctx.font = 'bold 54px Arial';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(label, cw/2, ch/2 + 3);
-    });
+    const active = (action === 'metric' && metric === value) || (action === 'stat' && statMode === value);
+    const tex = createWallButtonTexture(label, active);
     const mesh = makeWallPlane(w, h, tex, x, y, -0.010, 'wall_button_' + action + '_' + value);
     mesh.userData.wallAction = action;
     mesh.userData.wallValue = value;
@@ -2177,46 +2315,7 @@ function createWallHeatmapControlPanel(roomSize, roomHeight) {
     wallHeatmapPanel.scale.set(HEATMAP_PANEL_SCALE, HEATMAP_PANEL_SCALE, 1.0);
     addToFloorCoordinateAnchor(wallHeatmapPanel);
 
-    const bgTex = createPanelCanvasTexture(1400, 760, (ctx, w, h) => {
-        ctx.clearRect(0, 0, w, h);
-        ctx.fillStyle = '#020617';
-        roundRectPath(ctx, 20, 20, w - 40, h - 40, 42);
-        ctx.fill();
-        ctx.strokeStyle = '#64748b';
-        ctx.lineWidth = 6;
-        roundRectPath(ctx, 24, 24, w - 48, h - 48, 38);
-        ctx.stroke();
-        ctx.fillStyle = '#e5e7eb';
-        ctx.font = 'bold 54px Arial';
-        ctx.textAlign = 'center';
-        ctx.fillText('Heatmap Controls', w/2, 82);
-        ctx.fillStyle = '#cbd5e1';
-        ctx.font = '30px Arial';
-        ctx.textAlign = 'left';
-        ctx.fillText('Metric', 90, 160);
-        ctx.fillText('Statistic', 90, 292);
-        ctx.fillText('Heatmap scale', 90, 390);
-        ctx.fillText('Phase error graph', 90, 485);
-
-        // Keep the low-to-high heatmap indicator below the statistic buttons.
-        // It was previously drawn on the same horizontal band as the metric buttons,
-        // so it visually overlapped them on the wall panel.
-        const grd = ctx.createLinearGradient(360, 372, 760, 372);
-        grd.addColorStop(0, '#ffe10d');
-        grd.addColorStop(1, '#e60000');
-        ctx.fillStyle = grd;
-        roundRectPath(ctx, 360, 354, 600, 36, 18);
-        ctx.fill();
-        ctx.strokeStyle = '#e5e7eb';
-        ctx.lineWidth = 3;
-        roundRectPath(ctx, 360, 354, 600, 36, 18);
-        ctx.stroke();
-        ctx.fillStyle = '#cbd5e1';
-        ctx.font = '24px Arial';
-        ctx.fillText('low', 1000, 383);
-        ctx.fillText(' - ', 1060, 383);
-        ctx.fillText('high', 1100, 383);
-    });
+    const bgTex = createHeatmapPanelBackgroundTexture();
     makeWallPlane(4.35, 2.35, bgTex, 0, 0, 0.000, 'wall_heatmap_panel_background');
 
     createWallButton('Pos',   'metric', 'position', -0.95, 0.58, 0.50, 0.18);
@@ -2236,12 +2335,13 @@ function createWallHeatmapControlPanel(roomSize, roomHeight) {
 }
 
 function createWallInfoTexture(text) {
+    const ui = getWallThemePalette(true);
     return createPanelCanvasTexture(1200, 120, (ctx, w, h) => {
         ctx.clearRect(0, 0, w, h);
-        ctx.fillStyle = '#0f172a';
+        ctx.fillStyle = ui.panelSoft;
         roundRectPath(ctx, 12, 12, w - 24, h - 24, 22);
         ctx.fill();
-        ctx.fillStyle = '#e5e7eb';
+        ctx.fillStyle = ui.text;
         ctx.font = 'bold 38px Arial';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
@@ -2249,20 +2349,21 @@ function createWallInfoTexture(text) {
     });
 }
 
-function createWallGraphTexture(phaseId, percent) {
+function createWallGraphTexture(phaseId, percent, useSceneTheme = true) {
+    const ui = getWallThemePalette(useSceneTheme);
     return createPanelCanvasTexture(1200, 360, (ctx, w, h) => {
         ctx.clearRect(0, 0, w, h);
-        ctx.fillStyle = '#020617';
+        ctx.fillStyle = ui.panel;
         roundRectPath(ctx, 8, 8, w - 16, h - 16, 24);
         ctx.fill();
-        ctx.strokeStyle = '#334155';
+        ctx.strokeStyle = ui.borderSoft;
         ctx.lineWidth = 4;
         roundRectPath(ctx, 12, 12, w - 24, h - 24, 22);
         ctx.stroke();
 
         const curve = DATA && DATA.curves ? DATA.curves[String(phaseId)] : null;
         if (!curve) {
-            ctx.fillStyle = '#cbd5e1';
+            ctx.fillStyle = ui.muted;
             ctx.font = '34px Arial';
             ctx.fillText('No phase_time_metric_curves.csv data', 44, 80);
             return;
@@ -2277,13 +2378,13 @@ function createWallGraphTexture(phaseId, percent) {
         for (const s of series) all = all.concat(s[1] || []);
         const maxV = Math.max(...all.map(Number), 1e-9);
 
-        ctx.strokeStyle = '#475569';
+        ctx.strokeStyle = ui.grid;
         ctx.lineWidth = 2;
         for (let k=0; k<=4; k++) {
             const y = marginT + (k/4) * plotH;
             ctx.beginPath(); ctx.moveTo(marginL, y); ctx.lineTo(marginL + plotW, y); ctx.stroke();
         }
-        ctx.strokeStyle = '#94a3b8';
+        ctx.strokeStyle = ui.axis;
         ctx.lineWidth = 3;
         ctx.strokeRect(marginL, marginT, plotW, plotH);
 
@@ -2306,11 +2407,11 @@ function createWallGraphTexture(phaseId, percent) {
         });
 
         const xCur = marginL + (Number(percent || 0) / 100) * plotW;
-        ctx.strokeStyle = '#ffffff';
+        ctx.strokeStyle = ui.cursor;
         ctx.lineWidth = 3;
         ctx.beginPath(); ctx.moveTo(xCur, marginT); ctx.lineTo(xCur, marginT + plotH); ctx.stroke();
 
-        ctx.fillStyle = '#cbd5e1';
+        ctx.fillStyle = ui.muted;
         ctx.font = '24px Arial';
         ctx.fillText('phase time (%)', w - 220, h - 15);
     });
@@ -2330,21 +2431,7 @@ function refreshWallHeatmapPanel(phaseId, percent) {
         const active = (obj.userData.wallAction === 'metric' && metric === obj.userData.wallValue) ||
                        (obj.userData.wallAction === 'stat' && statMode === obj.userData.wallValue);
         if (obj.material.map) obj.material.map.dispose();
-        obj.material.map = createPanelCanvasTexture(512, 192, (ctx, cw, ch) => {
-            ctx.clearRect(0, 0, cw, ch);
-            ctx.fillStyle = active ? '#2563eb' : '#334155';
-            roundRectPath(ctx, 24, 24, cw - 48, ch - 48, 34);
-            ctx.fill();
-            ctx.strokeStyle = active ? '#bfdbfe' : '#64748b';
-            ctx.lineWidth = 8;
-            roundRectPath(ctx, 28, 28, cw - 56, ch - 56, 30);
-            ctx.stroke();
-            ctx.fillStyle = '#ffffff';
-            ctx.font = 'bold 54px Arial';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText(label, cw/2, ch/2 + 3);
-        });
+        obj.material.map = createWallButtonTexture(label, active);
         obj.material.needsUpdate = true;
     }
 
@@ -2402,21 +2489,7 @@ function createRightWallDTWDashboard(roomSize, roomHeight) {
     rightWallDTWPanel.scale.set(DTW_PANEL_SCALE, DTW_PANEL_SCALE, 1.0);
     addToFloorCoordinateAnchor(rightWallDTWPanel);
 
-    const bgTex = createPanelCanvasTexture(1900, 900, (ctx, w, h) => {
-        ctx.clearRect(0, 0, w, h);
-        ctx.fillStyle = '#020617';
-        roundRectPath(ctx, 20, 20, w - 40, h - 40, 44);
-        ctx.fill();
-        ctx.strokeStyle = '#64748b';
-        ctx.lineWidth = 6;
-        roundRectPath(ctx, 24, 24, w - 48, h - 48, 40);
-        ctx.stroke();
-        ctx.fillStyle = '#e5e7eb';
-        ctx.font = 'bold 58px Arial';
-        ctx.textAlign = 'center';
-        ctx.fillText('DTW Alignment', w / 2, 84);
-        // Removed extra subtitles to keep the larger DTW dashboard clean in VR.
-    });
+    const bgTex = createDTWDashboardBackgroundTexture();
     makeRightWallPlane(5.45, 2.72, bgTex, 0, 0, 0.000, 'right_wall_dtw_dashboard_background');
 
     // Small complete/full DTW path on the left.
@@ -2497,8 +2570,9 @@ function getDTWPairsForPhase(phase) {
         .filter(p => p[0] >= start && p[0] <= end && Number.isFinite(p[0]) && Number.isFinite(p[1]));
 }
 
-function drawDTWAxes(ctx, x, y, w, h, xLabel, yLabel) {
-    ctx.strokeStyle = '#475569';
+function drawDTWAxes(ctx, x, y, w, h, xLabel, yLabel, useSceneTheme = true) {
+    const ui = getWallThemePalette(useSceneTheme);
+    ctx.strokeStyle = ui.grid;
     ctx.lineWidth = 2;
     for (let k = 0; k <= 4; k++) {
         const gx = x + (k / 4) * w;
@@ -2506,10 +2580,10 @@ function drawDTWAxes(ctx, x, y, w, h, xLabel, yLabel) {
         ctx.beginPath(); ctx.moveTo(gx, y); ctx.lineTo(gx, y + h); ctx.stroke();
         ctx.beginPath(); ctx.moveTo(x, gy); ctx.lineTo(x + w, gy); ctx.stroke();
     }
-    ctx.strokeStyle = '#94a3b8';
+    ctx.strokeStyle = ui.axis;
     ctx.lineWidth = 4;
     ctx.strokeRect(x, y, w, h);
-    ctx.fillStyle = '#cbd5e1';
+    ctx.fillStyle = ui.muted;
     ctx.font = '24px Arial';
     ctx.textAlign = 'center';
     ctx.fillText(xLabel, x + w / 2, y + h + 44);
@@ -2535,26 +2609,27 @@ function drawDTWPath(ctx, pairs, x, y, w, h, minRef, maxRef, minLearner, maxLear
     ctx.stroke();
 }
 
-function createDTWOverviewTexture(meta) {
+function createDTWOverviewTexture(meta, useSceneTheme = true) {
+    const ui = getWallThemePalette(useSceneTheme);
     return createPanelCanvasTexture(720, 760, (ctx, w, h) => {
         ctx.clearRect(0, 0, w, h);
-        ctx.fillStyle = '#020617';
+        ctx.fillStyle = ui.panel;
         roundRectPath(ctx, 10, 10, w - 20, h - 20, 28);
         ctx.fill();
-        ctx.strokeStyle = '#334155';
+        ctx.strokeStyle = ui.borderSoft;
         ctx.lineWidth = 4;
         roundRectPath(ctx, 14, 14, w - 28, h - 28, 24);
         ctx.stroke();
-        ctx.fillStyle = '#e5e7eb';
+        ctx.fillStyle = ui.text;
         ctx.font = 'bold 34px Arial';
         ctx.textAlign = 'center';
         ctx.fillText('Complete DTW path', w / 2, 55);
 
         const pairs = getAllDTWPairs();
         const plotX = 86, plotY = 100, plotW = w - 140, plotH = h - 205;
-        drawDTWAxes(ctx, plotX, plotY, plotW, plotH, 'reference', 'learner');
+        drawDTWAxes(ctx, plotX, plotY, plotW, plotH, 'reference', 'learner', useSceneTheme);
         if (!pairs.length) {
-            ctx.fillStyle = '#cbd5e1';
+            ctx.fillStyle = ui.muted;
             ctx.font = '28px Arial';
             ctx.fillText('No dtw_alignment_path.csv', w/2, h/2);
             return;
@@ -2569,12 +2644,12 @@ function createDTWOverviewTexture(meta) {
             drawDTWPath(ctx, phasePairs, plotX, plotY, plotW, plotH, 0, maxRef, 0, maxLearner, '#facc15', 8);
             const px = plotX + (Number(meta.reference_index) / Math.max(maxRef, 1)) * plotW;
             const py = plotY + plotH - (Number(meta.learner_index) / Math.max(maxLearner, 1)) * plotH;
-            ctx.fillStyle = '#ffffff';
+            ctx.fillStyle = ui.cursor;
             ctx.beginPath(); ctx.arc(px, py, 11, 0, Math.PI * 2); ctx.fill();
             ctx.strokeStyle = '#ef4444'; ctx.lineWidth = 5; ctx.stroke();
         }
 
-        ctx.fillStyle = '#cbd5e1';
+        ctx.fillStyle = ui.muted;
         ctx.font = '24px Arial';
         ctx.textAlign = 'left';
         ctx.fillText('Blue: full alignment', 70, h - 74);
@@ -2583,30 +2658,31 @@ function createDTWOverviewTexture(meta) {
     });
 }
 
-function createDTWPhaseTexture(meta, phase) {
+function createDTWPhaseTexture(meta, phase, useSceneTheme = true) {
+    const ui = getWallThemePalette(useSceneTheme);
     return createPanelCanvasTexture(1300, 760, (ctx, w, h) => {
         ctx.clearRect(0, 0, w, h);
-        ctx.fillStyle = '#020617';
+        ctx.fillStyle = ui.panel;
         roundRectPath(ctx, 10, 10, w - 20, h - 20, 28);
         ctx.fill();
-        ctx.strokeStyle = '#334155';
+        ctx.strokeStyle = ui.borderSoft;
         ctx.lineWidth = 4;
         roundRectPath(ctx, 14, 14, w - 28, h - 28, 24);
         ctx.stroke();
 
         if (!phase) phase = DATA && DATA.phases ? DATA.phases[0] : null;
         const phaseId = phase ? Number(phase.phase_id) : 0;
-        ctx.fillStyle = '#e5e7eb';
+        ctx.fillStyle = ui.text;
         ctx.font = 'bold 36px Arial';
         ctx.textAlign = 'center';
         ctx.fillText(`Current phase DTW path: P${phaseId}`, w / 2, 55);
 
         const pairs = getDTWPairsForPhase(phase);
         const plotX = 95, plotY = 105, plotW = w - 175, plotH = h - 250;
-        drawDTWAxes(ctx, plotX, plotY, plotW, plotH, 'reference index in phase', 'learner index');
+        drawDTWAxes(ctx, plotX, plotY, plotW, plotH, 'reference index in phase', 'learner index', useSceneTheme);
 
         if (!pairs.length || !phase) {
-            ctx.fillStyle = '#cbd5e1';
+            ctx.fillStyle = ui.muted;
             ctx.font = '30px Arial';
             ctx.fillText('No DTW pairs for current phase', w/2, h/2);
             return;
@@ -2623,19 +2699,19 @@ function createDTWPhaseTexture(meta, phase) {
             const learnerSpan = Math.max(maxLearner - minLearner, 1e-9);
             const px = plotX + ((Number(meta.reference_index) - minRef) / refSpan) * plotW;
             const py = plotY + plotH - ((Number(meta.learner_index) - minLearner) / learnerSpan) * plotH;
-            ctx.strokeStyle = '#ffffff';
+            ctx.strokeStyle = ui.cursor;
             ctx.lineWidth = 4;
             ctx.beginPath(); ctx.moveTo(px, plotY); ctx.lineTo(px, plotY + plotH); ctx.stroke();
             ctx.beginPath(); ctx.moveTo(plotX, py); ctx.lineTo(plotX + plotW, py); ctx.stroke();
-            ctx.fillStyle = '#ffffff';
+            ctx.fillStyle = ui.cursor;
             ctx.beginPath(); ctx.arc(px, py, 13, 0, Math.PI * 2); ctx.fill();
             ctx.strokeStyle = '#ef4444'; ctx.lineWidth = 6; ctx.stroke();
         }
 
         const speed = getPhaseSpeedStatus(phase);
-        drawSpeedIndicator(ctx, w - 425, h - 142, 350, 112, speed);
+        drawSpeedIndicator(ctx, w - 425, h - 142, 350, 112, speed, useSceneTheme);
 
-        ctx.fillStyle = '#cbd5e1';
+        ctx.fillStyle = ui.muted;
         ctx.font = '27px Arial';
         ctx.textAlign = 'left';
         ctx.fillText(`Ref phase index: ${phase.start_index}–${phase.end_index}`, 92, h - 94);
@@ -2679,8 +2755,9 @@ function getPhaseSpeedStatus(metaOrPhase) {
     return { ratio, label: 'Similar speed', detail: `Duration ratio ${ratio.toFixed(2)}×`, color: '#22c55e', direction: 0 };
 }
 
-function drawSpeedIndicator(ctx, x, y, w, h, speed) {
-    ctx.fillStyle = '#eff6ff';
+function drawSpeedIndicator(ctx, x, y, w, h, speed, useSceneTheme = true) {
+    const ui = getWallThemePalette(useSceneTheme);
+    ctx.fillStyle = ui.speedBackground;
     roundRectPath(ctx, x, y, w, h, 20);
     ctx.fill();
     ctx.strokeStyle = speed.color;
@@ -2688,20 +2765,20 @@ function drawSpeedIndicator(ctx, x, y, w, h, speed) {
     roundRectPath(ctx, x + 2, y + 2, w - 4, h - 4, 18);
     ctx.stroke();
 
-    ctx.fillStyle = '#172033';
+    ctx.fillStyle = ui.text;
     ctx.font = 'bold 28px Arial';
     ctx.textAlign = 'center';
     ctx.fillText(speed.label, x + w / 2, y + 36);
-    ctx.fillStyle = '#526174';
+    ctx.fillStyle = ui.muted;
     ctx.font = '22px Arial';
     ctx.fillText(speed.detail, x + w / 2, y + 68);
 
     const cy = y + h - 36;
     const centerX = x + w / 2;
-    ctx.strokeStyle = '#94a3b8';
+    ctx.strokeStyle = ui.axis;
     ctx.lineWidth = 8;
     ctx.beginPath(); ctx.moveTo(x + 42, cy); ctx.lineTo(x + w - 42, cy); ctx.stroke();
-    ctx.fillStyle = '#94a3b8';
+    ctx.fillStyle = ui.axis;
     ctx.font = '18px Arial';
     ctx.fillText('faster', x + 72, cy + 30);
     ctx.fillText('same', centerX, cy + 30);
@@ -2715,17 +2792,18 @@ function drawSpeedIndicator(ctx, x, y, w, h, speed) {
     ctx.strokeStyle = '#2563eb'; ctx.lineWidth = 4; ctx.stroke();
 }
 
-function createDTWInfoTexture(meta, phase) {
+function createDTWInfoTexture(meta, phase, useSceneTheme = true) {
+    const ui = getWallThemePalette(useSceneTheme);
     return createPanelCanvasTexture(1600, 250, (ctx, w, h) => {
         ctx.clearRect(0, 0, w, h);
-        ctx.fillStyle = '#0f172a';
+        ctx.fillStyle = ui.panelSoft;
         roundRectPath(ctx, 12, 12, w - 24, h - 24, 28);
         ctx.fill();
-        ctx.strokeStyle = '#64748b';
+        ctx.strokeStyle = ui.border;
         ctx.lineWidth = 4;
         roundRectPath(ctx, 16, 16, w - 32, h - 32, 24);
         ctx.stroke();
-        ctx.fillStyle = '#e5e7eb';
+        ctx.fillStyle = ui.text;
         ctx.font = 'bold 40px Arial';
         ctx.textAlign = 'center';
         if (!meta || !phase) {
@@ -2736,7 +2814,7 @@ function createDTWInfoTexture(meta, phase) {
         ctx.fillText(`P${meta.phase_id}: current DTW match`, w/2, 58);
         ctx.font = '34px Arial';
         ctx.fillText(`Reference index/frame: ${meta.reference_index}  →  Learner index/frame: ${meta.learner_index} `, w/2, 120);
-        ctx.fillStyle = '#cbd5e1';
+        ctx.fillStyle = ui.muted;
         ctx.font = '30px Arial';
         ctx.fillText(`Phase frames: ref ${phase.start_frame}–${phase.end_frame} | learner ${comparison.learner_start_frame ?? '-'}–${comparison.learner_end_frame ?? '-'}`, w/2, 168);
         const speed = getPhaseSpeedStatus(meta);
@@ -2781,10 +2859,10 @@ function copyTextureToWebCanvas(texture, canvasId) {
 
 function refreshWebAnalysisPanels(meta, phase) {
     if (!meta || !phase) return;
-    copyTextureToWebCanvas(createWallGraphTexture(meta.phase_id, meta.phase_progress), 'webErrorGraph');
-    copyTextureToWebCanvas(createDTWOverviewTexture(meta), 'webDTWOverview');
-    copyTextureToWebCanvas(createDTWPhaseTexture(meta, phase), 'webDTWPhase');
-    copyTextureToWebCanvas(createDTWInfoTexture(meta, phase), 'webDTWInfo');
+    copyTextureToWebCanvas(createWallGraphTexture(meta.phase_id, meta.phase_progress, false), 'webErrorGraph');
+    copyTextureToWebCanvas(createDTWOverviewTexture(meta, false), 'webDTWOverview');
+    copyTextureToWebCanvas(createDTWPhaseTexture(meta, phase, false), 'webDTWPhase');
+    copyTextureToWebCanvas(createDTWInfoTexture(meta, phase, false), 'webDTWInfo');
 
     const info = $('webGraphInfo');
     if (info) info.innerText = `Metric: ${metric} | Statistic: ${statMode} | Phase: P${meta.phase_id}`;
